@@ -1,8 +1,8 @@
 {
-  "id": "obsidian-sample-plugin",
+  "id": "obsidian-text-expand",
   "name": "Text {{expand}}",
   "description": "This is a plugin which find content in `{{ CONTENT }}` and will ",
   "isDesktopOnly": false,
   "js": "main.js",
-  "css": "styles.css"
+  "css": ""
 }
