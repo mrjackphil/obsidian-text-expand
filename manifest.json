@@ -1,7 +1,7 @@
 {
   "id": "obsidian-sample-plugin",
-  "name": "Sample Plugin",
-  "description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+  "name": "Text {{expand}}",
+  "description": "This is a plugin which find content in `{{ CONTENT }}` and will ",
   "isDesktopOnly": false,
   "js": "main.js",
   "css": "styles.css"

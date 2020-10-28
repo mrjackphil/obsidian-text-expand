@@ -1,22 +1,12 @@
-## Obsidian Sample Plugin
+# Text {{expand}}
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+![](./screenshots/1.gif)
 
-This project uses Typescript to provide type checking and documentation.
-The repo contains the latest plugin API (obsidian.d.ts) in Typescript Definition format, which contains TSDoc comments describing what it does.
+## How to use
 
-**Note:** The Obsidian API is still in early alpha and is subject to change at any time!
+-   Type {{tag:#tag}} in your note.
+-   Put a cursor on that line
+-   Open command palette and find `Text {{expand}}:` commands (you can attach hotkeys in settings menu)
 
-### How to use
-
-- Clone this repo.
-- `npm i` or `yarn` to install dependencies
-- `npm run dev` to start compilation in watch mode.
-
-### How to install the plugin
-
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `vault/.obsidian/plugins/plugin-id/`.
-
-### API Documentation
-
-See https://github.com/obsidianmd/obsidian-api
+It should wrap the {{tag:#tag}} line and add notes which was found below.
+You can call command in a `{{ }}` line to update results.
