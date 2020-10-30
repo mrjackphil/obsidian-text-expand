@@ -1,8 +1,9 @@
 {
-  "id": "obsidian-text-expand",
+  "id": "mrj-text-expand",
   "name": "Text {{expand}}",
-  "description": "This is a plugin which find content in `{{ CONTENT }}` and will ",
+  "version": "0.4.0",
+  "description": "Search and paste/transclude links to founded files.",
   "isDesktopOnly": false,
-  "js": "main.js",
-  "css": ""
+  "author": "MrJackphil",
+  "authorUrl": "https://mrjackphil.com"
 }

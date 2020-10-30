@@ -1,4 +1,4 @@
-import {App, Modal, View, Plugin, PluginSettingTab, Setting, TFile, FileView, MarkdownView} from 'obsidian';
+import {App, View, Plugin, PluginSettingTab, Setting, TFile, FileView, MarkdownView} from 'obsidian';
 
 interface Config {
     id: string
@@ -15,14 +15,13 @@ function inlineLog(str: string) {
     return str
 }
 
-export default class MyPlugin extends Plugin {
-    onInit() {
-
-    }
+export default class TextExpander extends Plugin {
+    delay = 2000;
 
     onload() {
-        console.log('loading plugin');
-        const DELAY = 2000
+        this.addSettingTab(new SettingTab(this.app, this));
+
+        console.log('Loading Text Expander');
         const config: Config[] = [
             {
                 id: 'editor:expandEmbeds',
@@ -76,7 +75,8 @@ export default class MyPlugin extends Plugin {
             // Search files
             let cmDoc = null as CodeMirror.Doc || null
             // @ts-ignore
-            const search = (query: string) => this.app.globalSearch.openGlobalSearch(inlineLog(query))
+            const globalSearchFn = this.app.internalPlugins.getPluginById('global-search').instance.openGlobalSearch.bind(this)
+            const search = (query: string) => globalSearchFn(inlineLog(query))
             const getFoundFilenames = (mapFunc: (s: string) => string, callback: (s: string) => any) => {
                 const searchLeaf = this.app.workspace.getLeavesOfType('search')[0]
                 searchLeaf.open(searchLeaf.view)
@@ -85,7 +85,7 @@ export default class MyPlugin extends Plugin {
                         // @ts-ignore
                         const result = reformatLinks(view.dom.resultDoms, mapFunc)
                         callback(result)
-                    }, DELAY))
+                    }, this.delay))
             }
 
             const currentView = this.app.workspace.activeLeaf.view
@@ -141,38 +141,31 @@ export default class MyPlugin extends Plugin {
     }
 }
 
-class SampleModal extends Modal {
-    constructor(app: App) {
-        super(app);
+class SettingTab extends PluginSettingTab {
+    plugin: TextExpander
+
+    constructor(app: App, plugin: TextExpander) {
+        super(app, plugin);
+
+        this.app = app
+        this.plugin = plugin
     }
 
-    onOpen() {
-        let {contentEl} = this;
-        contentEl.setText('Woah!');
-    }
-
-    onClose() {
-        let {contentEl} = this;
-        contentEl.empty();
-    }
-}
-
-class SampleSettingTab extends PluginSettingTab {
     display(): void {
         let {containerEl} = this;
 
         containerEl.empty();
 
-        containerEl.createEl('h2', {text: 'Settings for my awesome plugin.'});
+        containerEl.createEl('h2', {text: 'Settings for Text Expander'});
 
         new Setting(containerEl)
-            .setName('Setting #1')
-            .setDesc('It\'s a secret')
-            .addText(text => text.setPlaceholder('Enter your secret')
-                .setValue('')
-                .onChange((value) => {
-                    console.log('Secret: ' + value);
-                }));
-
+            .setName('Delay')
+            .setDesc('Text expander don\' wait until search completed. It waits for a delay and paste result after that.')
+            .addSlider(slider => {
+                slider.setLimits(1000, 10000, 1000)
+                slider.setValue(this.plugin.delay)
+                slider.onChange(value => this.plugin.delay = value)
+                slider.setDynamicTooltip()
+            })
     }
 }
