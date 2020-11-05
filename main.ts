@@ -26,12 +26,12 @@ export default class TextExpander extends Plugin {
         const currentView = this.app.workspace.activeLeaf.view
 
         if (currentView instanceof FileView) {
-            return links.map(e => e.file.name)
-                .filter(e => currentView.file.name !== e)
+            return links.map(e => e.file.basename)
+                .filter(e => currentView.file.basename !== e)
                 .map(mapFunc).join('\n')
         }
 
-        return links.map(e => e.file.name).map(mapFunc).join('\n')
+        return links.map(e => e.file.basename).map(mapFunc).join('\n')
     }
 
     getLastLineNum(doc: CodeMirror.Doc, line = 0): number {
@@ -100,7 +100,6 @@ export default class TextExpander extends Plugin {
             const searchLeaf = this.app.workspace.getLeavesOfType('search')[0]
             searchLeaf.open(searchLeaf.view)
                 .then((view: View) => setTimeout(() => {
-                    // Using undocumented feature
                     // @ts-ignore
                     const result = reformatLinks(view.dom.resultDoms)
                     callback(result)
@@ -117,7 +116,7 @@ export default class TextExpander extends Plugin {
         // @ts-ignore
         const isVim = this.app.vault.config.vimMode
 
-        const hasFormulaRegexp = /^\{\{.+\}\}$/
+        const hasFormulaRegexp = /^{{.+}}$/
         const curNum = cmDoc.getCursor().line
         const curText = cmDoc.getLine(curNum)
 
@@ -175,8 +174,6 @@ export default class TextExpander extends Plugin {
             .replace('$created', String(r.stat.ctime))
             .replace('$size', String(r.stat.size)))
             .join('\n')
-
-        console.log(t)
 
         const result = t
             .map(s => s
