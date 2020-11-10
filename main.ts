@@ -87,8 +87,8 @@ export default class TextExpander extends Plugin {
         const topLine = fromLineNum + topOffset + 1
         const botLine = fromLineNum + botOffset - 1
 
-        return cm.getRange({line: topLine, ch: 0},
-            {line: botLine, ch: cm.getLine(botLine).length})
+        return cm.getRange({line: topLine || fromLineNum, ch: 0},
+            {line: botLine || fromLineNum, ch: cm.getLine(botLine)?.length })
     }
 
     search(s: string) {
