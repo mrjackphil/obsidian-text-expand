@@ -3,7 +3,7 @@
 ![](./screenshots/1.gif)
 
 This plugin will search files using [Obsidian search functionality](https://publish.obsidian.md/help/Plugins/Search) 
-and then paste result. The output can be customized using [template feature](#Template feature).
+and then paste result. The output can be customized using [template feature](#template-feature).
 
 ## Install
 - If you have previous versions of plugin - remove them
