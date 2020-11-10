@@ -55,7 +55,7 @@ Also, [[$filename]] <- this will be a link
 
 - Line prepended with `^` is a header. It will be added at the top of the list
 - Line prepended with `>` is a footer. It will be added at the bottom of the list
-- Line with no special symbol at start will be repeated for each file. Also, all special sequences will be extended.
+- Line with no special symbol at start will be repeated for each file. Also, all special sequences will be replaced.
 
 #### Special sequences
 - `$filename` - return a basename of a file
