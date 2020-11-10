@@ -34,6 +34,20 @@ export default class TextExpander extends Plugin {
         return links.map(e => e.file.basename).map(mapFunc).join('\n')
     }
 
+    getFstLineNum(doc: CodeMirror.Doc, line = 0): number {
+        const lineNum = line === 0
+            ? doc.getCursor().line
+            : line
+
+        if (doc.lineCount() === lineNum) {
+            return doc.getCursor().line + 1
+        }
+
+        return doc.getLine(lineNum) === '```'
+            ? lineNum + 1
+            : this.getFstLineNum(doc, lineNum + 1)
+    }
+
     getLastLineNum(doc: CodeMirror.Doc, line = 0): number {
         const lineNum = line === 0
             ? doc.getCursor().line
@@ -70,7 +84,7 @@ export default class TextExpander extends Plugin {
         const topOffset = this.getLinesOffsetToGoal(fromLineNum, startLine, -1)
         const botOffset = this.getLinesOffsetToGoal(fromLineNum, endLine, 1)
 
-        const topLine = fromLineNum - topOffset - 1
+        const topLine = fromLineNum + topOffset + 1
         const botLine = fromLineNum + botOffset - 1
 
         return cm.getRange({line: topLine, ch: 0},
@@ -113,20 +127,20 @@ export default class TextExpander extends Plugin {
         }
 
         const cmDoc = this.cm = currentView.sourceMode.cmEditor
-        // @ts-ignore
-        const isVim = this.app.vault.config.vimMode
 
-        const hasFormulaRegexp = /^{{.+}}$/
         const curNum = cmDoc.getCursor().line
         const curText = cmDoc.getLine(curNum)
+        const workingLine = this.getContentBetweenLines(curNum, '```expander', '```') || curText
 
-        if (!hasFormulaRegexp.test(curText)) {
+        const hasFormulaRegexp = /^{{.+}}/
+
+        if (!hasFormulaRegexp.test(workingLine)) {
             return
         }
 
-        const isEmbed = cmDoc.getLine(curNum - 1) === '```expander'
+        const isEmbed = workingLine.split('\n').length > 1 || cmDoc.getLine(curNum - 1) === '```expander'
 
-        if (isEmbed && this.checkTemplateMode(curNum)) { return }
+        if (isEmbed && this.checkTemplateMode(workingLine, curNum)) { return }
 
         const fstLineNumToReplace = isEmbed
             ? curNum - 1
@@ -149,11 +163,8 @@ export default class TextExpander extends Plugin {
         getFoundFilenames(replaceLine)
     }
 
-    checkTemplateMode(curLineNum: number) {
-        const content = this.getContentBetweenLines(curLineNum, '```expander', '```').split('\n')
-        const hasTemplate = content.length > 1
-
-        console.log(content)
+    checkTemplateMode(content: string, curLineNum: number) {
+        const hasTemplate = content.split('\n').length > 1
 
         if (!hasTemplate) {
             return false
@@ -164,31 +175,58 @@ export default class TextExpander extends Plugin {
         return true
     }
 
-    async startTemplateMode(c: string[], n: number) {
-        const [f, ...t] = c
-        this.search(f.replace(/[\{\{|\}\}]/g, ''))
+    async startTemplateMode(content: string, n: number) {
+        const [searchFormula, ...templateContent] = content.split('\n')
+        this.search(searchFormula.replace(/[\{\{|\}\}]/g, ''))
         const files = await this.getFoundAfterDelay(s => s) as TFile[]
+        const currentView = this.app.workspace.activeLeaf.view
+        let currentFileName = ''
 
-        const format = (s: string) => files.map((r: TFile) => s
-            .replace('$filename', r.basename)
-            .replace('$created', String(r.stat.ctime))
-            .replace('$size', String(r.stat.size)))
-            .join('\n')
+        const heading = templateContent.filter(e => e[0] === '^').map(([_, ...tail]) => tail)
+        const footer = templateContent.filter(e => e[0] === '>').map(([_, ...tail]) => tail)
+        const repeatableContent = templateContent.filter(e => e[0] !== '^' && e[0] !== '>')
 
-        const result = t
-            .map(s => s
-                .split('')[0] === '>'
-                    ? format(s.replace(/^>/, ''))
-                    : s )
-            .join('\n') + '\n---'
-        const lstLine = this.getLastLineNum(this.cm, n + t.length)
+        if (currentView instanceof FileView) {
+            currentFileName = currentView.file.basename
+        }
+
+        const filesWithoutCurrent = files.filter(file => file.basename !== currentFileName)
+
+        const format = (r: TFile, s: string) => s
+                .replace(/\$filename/g, r.basename)
+                .replace(/\$letters:\d+/g,
+                        str => r.cachedData
+                            .split('')
+                            .filter(
+                                (_: string, i: number) => i < Number(str.split(':')[1])
+                            ).join('')
+                )
+                .replace(/\$lines:\d+/g,
+                    str => r.cachedData
+                        .split('\n')
+                        .filter(
+                            (_: string, i: number) => i < Number(str.split(':')[1])
+                        ).join('\n')
+                )
+                .replace(/\$letters+/g, r.cachedData)
+                .replace(/\$lines+/g, r.cachedData)
+                .replace(/\$ext/g, r.extension)
+                .replace(/\$created/g, String(r.stat.ctime))
+                .replace(/\$size/g, String(r.stat.size))
+
+        const changed = filesWithoutCurrent.map(file => repeatableContent.map(s => format(file, s)).join('\n'))
+
+        const result = heading.join('\n') + '\n' + changed.join('\n') + '\n' + footer.join('\n') + '\n\n---'
+
+        const fstLine = this.getFstLineNum(this.cm, n)
+        const lstLine = this.getLastLineNum(this.cm, fstLine)
 
         this.cm.replaceRange(result,
-            {line: n + t.length + 2, ch: 0},
+            {line: fstLine, ch: 0},
             {line: lstLine, ch: this.cm.getLine(lstLine).length})
     }
 
-    onload() {
+    async onload() {
         this.addSettingTab(new SettingTab(this.app, this));
 
         this.addCommand({
@@ -197,6 +235,9 @@ export default class TextExpander extends Plugin {
             callback: this.initExpander,
             hotkeys: []
         })
+
+        const data = await this.loadData()
+        this.delay = data?.delay || 2000
     }
 
     onunload() {
@@ -227,7 +268,10 @@ class SettingTab extends PluginSettingTab {
             .addSlider(slider => {
                 slider.setLimits(1000, 10000, 1000)
                 slider.setValue(this.plugin.delay)
-                slider.onChange(value => this.plugin.delay = value)
+                slider.onChange(value => {
+                    this.plugin.delay = value
+                    this.plugin.saveData({ delay: value })
+                })
                 slider.setDynamicTooltip()
             })
     }
