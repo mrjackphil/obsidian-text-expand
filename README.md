@@ -26,32 +26,38 @@ You can call command in a `{{ }}` line to update results.
 ### Template feature
 Once `{{ }}` line wrapped you can use template functionality to extend output.
 
+- Put template below the SEARCH_QUERY line
+- Put a cursor inside code block with a templete 
+-   Open command palette (`Ctrl+P`) and find `Text {{expand}}:` commands (you can attach hotkeys in settings menu)
+
 ![](./screenshots/3.png)
 ![](./screenshots/2.png)
 
 To create a list:
-```expander
-{{Expander}}
-- [[$filename]]
-```
+
+    ```expander
+    {{Expander}}
+    - [[$filename]]
+    ```
 
 or to create a table:
-```expander
-{{Expander}}
-^|Filename|Content|
-^|---|---|
-|$filename|$content|
-```
+
+    ```expander
+    {{Expander}}
+    ^|Filename|Content|
+    ^|---|---|
+    |$filename|$content|
+    ```
 
 
 Syntax looks like that:
-```expander
-{{Expander}}
-^This is a header
-This line will be repeated for each file
-Also, [[$filename]] <- this will be a link
->This is a footer
-```
+    ```expander
+    {{Expander}}
+    ^This is a header
+    This line will be repeated for each file
+    Also, [[$filename]] <- this will be a link
+    >This is a footer
+    ```
 
 - Line prepended with `^` is a header. It will be added at the top of the list
 - Line prepended with `>` is a footer. It will be added at the bottom of the list
