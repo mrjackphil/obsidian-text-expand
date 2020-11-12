@@ -46,7 +46,7 @@ or to create a table:
     {{Expander}}
     ^|Filename|Content|
     ^|---|---|
-    |$filename|$content|
+    |$filename|$lines|
     ```
 
 
