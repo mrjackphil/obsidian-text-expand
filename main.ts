@@ -213,6 +213,8 @@ export default class TextExpander extends Plugin {
                 .replace(/\$ext/g, r.extension)
                 .replace(/\$created/g, String(r.stat.ctime))
                 .replace(/\$size/g, String(r.stat.size))
+				.replace(/\$path/g, r.path)
+				.replace(/\$parent/g, r.parent.name)
 
         const changed = filesWithoutCurrent.map(file => repeatableContent.map(s => format(file, s)).join('\n'))
 
