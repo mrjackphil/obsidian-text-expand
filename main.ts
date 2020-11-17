@@ -66,7 +66,7 @@ export default class TextExpander extends Plugin {
         const lineCount = this.cm.lineCount()
         let offset = 0
 
-        while (!isNaN(start + offset) && start + offset < lineCount && start + offset > 0) {
+        while (!isNaN(start + offset) && start + offset < lineCount && start + offset >= 0) {
             const result = goal === this.cm.getLine(start + offset)
 
             if (result) {
@@ -132,6 +132,7 @@ export default class TextExpander extends Plugin {
         const curText = cmDoc.getLine(curNum)
         const workingLine = this.getContentBetweenLines(curNum, '```expander', '```') || curText
 
+        console.log('between', this.getContentBetweenLines(curNum, '```expander', '```'))
         const hasFormulaRegexp = /^{{.+}}/
 
         if (!hasFormulaRegexp.test(workingLine)) {
@@ -195,26 +196,30 @@ export default class TextExpander extends Plugin {
         const format = (r: TFile, s: string) => s
                 .replace(/\$filename/g, r.basename)
                 .replace(/\$letters:\d+/g,
-                        str => r.cachedData
-                            .split('')
-                            .filter(
-                                (_: string, i: number) => i < Number(str.split(':')[1])
-                            ).join('')
+                    // @ts-ignore
+                    str => r.cachedData
+                        .split('')
+                        .filter(
+                            (_: string, i: number) => i < Number(str.split(':')[1])
+                        ).join('')
                 )
                 .replace(/\$lines:\d+/g,
+                    // @ts-ignore
                     str => r.cachedData
                         .split('\n')
                         .filter(
                             (_: string, i: number) => i < Number(str.split(':')[1])
                         ).join('\n')
                 )
+                // @ts-ignore
                 .replace(/\$letters+/g, r.cachedData)
+                // @ts-ignore
                 .replace(/\$lines+/g, r.cachedData)
                 .replace(/\$ext/g, r.extension)
                 .replace(/\$created/g, String(r.stat.ctime))
                 .replace(/\$size/g, String(r.stat.size))
-		.replace(/\$path/g, r.path)
-		.replace(/\$parent/g, r.parent.name)
+				.replace(/\$path/g, r.path)
+				.replace(/\$parent/g, r.parent.name)
 
         const changed = filesWithoutCurrent.map(file => repeatableContent.map(s => format(file, s)).join('\n'))
 
