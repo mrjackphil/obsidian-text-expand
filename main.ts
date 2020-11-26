@@ -272,6 +272,7 @@ export default class TextExpander extends Plugin {
 
         const data = await this.loadData()
         this.delay = data?.delay || 2000
+        this.lineEnding = data.lineEnding || '<--->'
     }
 
     onunload() {
@@ -307,6 +308,17 @@ class SettingTab extends PluginSettingTab {
                     this.plugin.saveData({ delay: value })
                 })
                 slider.setDynamicTooltip()
+            })
+
+        new Setting(containerEl)
+            .setName('Line ending')
+            .setDesc('You can specify the text which will appear at the bottom of the generated text.')
+            .addText(text => {
+                text.setValue(this.plugin.lineEnding)
+                    .onChange(val => {
+                        this.plugin.lineEnding = val
+                        this.plugin.saveData({ delay: this.plugin.delay, lineEnding: val })
+                    })
             })
     }
 }
