@@ -70,7 +70,7 @@ Syntax looks like that:
 - `$ext` - return extension of the file
 - `$created`
 - `$size`
-- `$parent` - return parent file
+- `$parent` - return parent folder
 - `$path` - return path to file 
 - `$frontmatter:NAME` - return frontmatter value from field `NAME`
 
