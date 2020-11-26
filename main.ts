@@ -22,16 +22,16 @@ export default class TextExpander extends Plugin {
         this.reformatLinks = this.reformatLinks.bind(this)
     }
 
-    reformatLinks(links: Files[], mapFunc = (s: string) => '[[' + s + ']]') {
+    reformatLinks(links: TFile[], mapFunc = (s: string) => '[[' + s + ']]') {
         const currentView = this.app.workspace.activeLeaf.view
 
         if (currentView instanceof FileView) {
-            return links.map(e => e.file.basename)
+            return links.map(e => e.basename)
                 .filter(e => currentView.file.basename !== e)
                 .map(mapFunc).join('\n')
         }
 
-        return links.map(e => e.file.basename).map(mapFunc).join('\n')
+        return links.map(e => e.basename).map(mapFunc).join('\n')
     }
 
     getFstLineNum(doc: CodeMirror.Doc, line = 0): number {
@@ -99,7 +99,7 @@ export default class TextExpander extends Plugin {
         search(s)
     }
 
-    async getFoundAfterDelay(mapFunc = (s: string) => '[[' + s + ']]' ) {
+    async getFoundAfterDelay() {
         const searchLeaf = this.app.workspace.getLeavesOfType('search')[0]
         const view = await searchLeaf.open(searchLeaf.view)
         return new Promise(resolve => {
@@ -108,70 +108,12 @@ export default class TextExpander extends Plugin {
         })
     }
 
-    initExpander() {
-        const {reformatLinks, getLastLineNum, search} = this
-        const getFoundFilenames = (callback: (s: string) => any) => {
-            const searchLeaf = this.app.workspace.getLeavesOfType('search')[0]
-            searchLeaf.open(searchLeaf.view)
-                .then((view: View) => setTimeout(() => {
-                    // @ts-ignore
-                    const result = reformatLinks(view.dom.resultDoms)
-                    callback(result)
-                }, this.delay))
-        }
-
-        const currentView = this.app.workspace.activeLeaf.view
-
-        if (!(currentView instanceof MarkdownView)) {
-            return
-        }
-
-        const cmDoc = this.cm = currentView.sourceMode.cmEditor
-
-        const curNum = cmDoc.getCursor().line
-        const curText = cmDoc.getLine(curNum)
-        const workingLine = this.getContentBetweenLines(curNum, '```expander', '```') || curText
-
-        console.log('between', this.getContentBetweenLines(curNum, '```expander', '```'))
-        const hasFormulaRegexp = /^{{.+}}/
-
-        if (!hasFormulaRegexp.test(workingLine)) {
-            return
-        }
-
-        const isEmbed = workingLine.split('\n').length > 1 || cmDoc.getLine(curNum - 1) === '```expander'
-
-        if (isEmbed && this.checkTemplateMode(workingLine, curNum)) { return }
-
-        const fstLineNumToReplace = isEmbed
-            ? curNum - 1
-            : curNum
-        const lstLineNumToReplace = isEmbed
-            ? getLastLineNum(cmDoc)
-            : curNum
-
-        const searchQuery = curText.replace('{{', '').replace('}}', '')
-        const embedFormula = '```expander\n' +
-            '{{' + searchQuery + '}}\n' +
-            '```\n'
-
-        const replaceLine = (content: string) => cmDoc.replaceRange(embedFormula + content + '\n\n---',
-            {line: fstLineNumToReplace, ch: 0},
-            {line: lstLineNumToReplace, ch: cmDoc.getLine(lstLineNumToReplace).length}
-        )
-
-        search(inlineLog(searchQuery))
-        getFoundFilenames(replaceLine)
-    }
-
-    checkTemplateMode(content: string, curLineNum: number) {
+    checkTemplateMode(content: string) {
         const hasTemplate = content.split('\n').length > 1
 
         if (!hasTemplate) {
             return false
         }
-
-        this.startTemplateMode(content, curLineNum)
 
         return true
     }
@@ -179,7 +121,7 @@ export default class TextExpander extends Plugin {
     async startTemplateMode(content: string, n: number) {
         const [searchFormula, ...templateContent] = content.split('\n')
         this.search(searchFormula.replace(/[\{\{|\}\}]/g, ''))
-        const files = await this.getFoundAfterDelay(s => s) as TFile[]
+        const files = await this.getFoundAfterDelay() as TFile[]
         const currentView = this.app.workspace.activeLeaf.view
         let currentFileName = ''
 
@@ -231,6 +173,66 @@ export default class TextExpander extends Plugin {
         this.cm.replaceRange(result,
             {line: fstLine, ch: 0},
             {line: lstLine, ch: this.cm.getLine(lstLine).length})
+    }
+
+    startSimpleMode(cmDoc: CodeMirror.Doc, isEmbed: boolean, curNum: number, curText: string) {
+        const {reformatLinks, getLastLineNum, search} = this
+
+        const getFoundFilenames = (callback: (s: string) => any) => {
+            const searchLeaf = this.app.workspace.getLeavesOfType('search')[0]
+            searchLeaf.open(searchLeaf.view)
+                .then((view: View) => setTimeout(() => {
+                    // @ts-ignore
+                    const result = reformatLinks(Array.from(view.dom.resultDomLookup.keys()))
+                    callback(result)
+                }, this.delay))
+        }
+        const replaceLine = (content: string) => cmDoc.replaceRange(embedFormula + content + '\n\n---',
+            {line: fstLineNumToReplace, ch: 0},
+            {line: lstLineNumToReplace, ch: cmDoc.getLine(lstLineNumToReplace).length}
+        )
+
+        const fstLineNumToReplace = isEmbed
+            ? curNum - 1
+            : curNum
+        const lstLineNumToReplace = isEmbed
+            ? getLastLineNum(cmDoc)
+            : curNum
+
+        const searchQuery = curText.replace('{{', '').replace('}}', '')
+        const embedFormula = '```expander\n' +
+            '{{' + searchQuery + '}}\n' +
+            '```\n'
+
+        search(inlineLog(searchQuery))
+        getFoundFilenames(replaceLine)
+    }
+
+    initExpander() {
+        const currentView = this.app.workspace.activeLeaf.view
+
+        if (!(currentView instanceof MarkdownView)) {
+            return
+        }
+
+        const cmDoc = this.cm = currentView.sourceMode.cmEditor
+        const curNum = cmDoc.getCursor().line
+        const curText = cmDoc.getLine(curNum)
+        const workingLine = this.getContentBetweenLines(curNum, '```expander', '```') || curText
+
+        const hasFormulaRegexp = /^{{.+}}/
+        const isEmbed = workingLine.split('\n').length > 1 || cmDoc.getLine(curNum - 1) === '```expander'
+
+        if (!hasFormulaRegexp.test(workingLine)) {
+            return
+        }
+
+        if (isEmbed && this.checkTemplateMode(workingLine)) {
+            this.startTemplateMode(workingLine, curNum)
+            return
+        }
+
+        this.startSimpleMode(cmDoc, isEmbed, curNum, curText)
     }
 
     async onload() {
