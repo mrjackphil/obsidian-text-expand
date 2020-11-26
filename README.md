@@ -6,8 +6,7 @@ This plugin will search files using [Obsidian search functionality](https://publ
 and then paste result. The output can be customized using [template feature](#template-feature).
 
 ## Install
-- If you have previous versions of plugin - remove them
-- You need Obsidian v0.9.18+
+- You need Obsidian v0.9.18+ for latest version of plugin
 - Get [Latest release](https://github.com/mrjackphil/obsidian-text-expand/releases/latest)
 - Extract files and place them to your vault's plugins folder: `<vault>/.obsidian/plugins/`
 - Reload Obsidian

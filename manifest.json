@@ -1,7 +1,7 @@
 {
   "id": "mrj-text-expand",
   "name": "Text {{expand}}",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "description": "Search and paste/transclude links to founded files.",
   "isDesktopOnly": false,
   "author": "MrJackphil",
