@@ -7,7 +7,7 @@ and then paste result. The output can be customized using [template feature](#te
 
 ## Install
 - If you have previous versions of plugin - remove them
-- You need Obsidian v0.9.7+
+- You need Obsidian v0.9.18+
 - Get [Latest release](https://github.com/mrjackphil/obsidian-text-expand/releases/latest)
 - Extract files and place them to your vault's plugins folder: `<vault>/.obsidian/plugins/`
 - Reload Obsidian
@@ -71,6 +71,9 @@ Syntax looks like that:
 - `$ext` - return extension of the file
 - `$created`
 - `$size`
+- `$parent` - return parent file
+- `$path` - return path to file 
+- `$frontmatter:NAME` - return frontmatter value from field `NAME`
 
 ## Support
 - [Patreon](https://patreon.com/mrjackphil)

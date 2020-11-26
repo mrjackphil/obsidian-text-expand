@@ -1,4 +1,15 @@
-import {App, View, Plugin, PluginSettingTab, Setting, TFile, FileView, MarkdownView, PluginManifest} from 'obsidian';
+import {
+    App,
+    View,
+    Plugin,
+    PluginSettingTab,
+    Setting,
+    TFile,
+    FileView,
+    MarkdownView,
+    PluginManifest,
+    MetadataCache
+} from 'obsidian';
 
 interface Files {
     file: TFile
@@ -105,7 +116,7 @@ export default class TextExpander extends Plugin {
         const view = await searchLeaf.open(searchLeaf.view)
         return new Promise(resolve => {
             // @ts-ignore
-            setTimeout(() => resolve(view.dom.resultDoms.map(e => e.file)), this.delay)
+            setTimeout(() => resolve(Array.from(view.dom.resultDomLookup.keys())), this.delay)
         })
     }
 
@@ -137,33 +148,45 @@ export default class TextExpander extends Plugin {
 
         const filesWithoutCurrent = files.filter(file => file.basename !== currentFileName)
 
+        const getFrontMatter = (s: string, r: TFile) => {
+            // @ts-ignore
+            const { frontmatter = null } = this.app.metadataCache.getCache(r.path)
+
+            if (frontmatter) {
+                return frontmatter[s.split(':')[1]]
+            }
+
+            return ''
+        }
+
         const format = (r: TFile, s: string) => s
-                .replace(/\$filename/g, r.basename)
-                .replace(/\$letters:\d+/g,
-                    // @ts-ignore
-                    str => r.cachedData
-                        .split('')
-                        .filter(
-                        (_: string, i: number) => i < Number(str.split(':')[1])
-                        ).join('')
-                )
-                .replace(/\$lines:\d+/g,
-                    // @ts-ignore
-                    str => r.cachedData
-                        .split('\n')
-                        .filter(
-                            (_: string, i: number) => i < Number(str.split(':')[1])
-                        ).join('\n')
-                )
+            .replace(/\$filename/g, r.basename)
+            .replace(/\$letters:\d+/g,
                 // @ts-ignore
-                .replace(/\$letters+/g, r.cachedData)
-                // @ts-ignore
-                .replace(/\$lines+/g, r.cachedData)
-                .replace(/\$ext/g, r.extension)
-                .replace(/\$created/g, String(r.stat.ctime))
-                .replace(/\$size/g, String(r.stat.size))
-				.replace(/\$path/g, r.path)
-				.replace(/\$parent/g, r.parent.name)
+            str => r.cachedData
+                    .split('')
+                    .filter((_: string, i: number) => i < Number(str.split(':')[1]))
+                    .join(''))
+            .replace(/\$lines:\d+/g,
+              // @ts-ignore
+
+         str => r.cachedData
+                 .split('\n')
+                 .filter((_: string, i: number) => i < Number(str.split(':')[1]))
+                 .join('\n')
+                 .replace(new RegExp(this.lineEnding, 'g'), '')
+            )
+            // @ts-ignore
+            .replace(/\$frontmatter:.+?$/, s => getFrontMatter(s, r))
+            // @ts-ignore
+            .replace(/\$letters+/g, r.cachedData.replace(new RegExp(this.lineEnding, 'g'), ''))
+            // @ts-ignore
+            .replace(/\$lines+/g, r.cachedData.replace(new RegExp(this.lineEnding, 'g'), ''))
+            .replace(/\$ext/g, r.extension)
+            .replace(/\$created/g, String(r.stat.ctime))
+            .replace(/\$size/g, String(r.stat.size))
+            .replace(/\$path/g, r.path)
+            .replace(/\$parent/g, r.parent.name)
 
         const changed = filesWithoutCurrent.map(file => repeatableContent.map(s => format(file, s)).join('\n'))
 
