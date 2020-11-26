@@ -12,6 +12,7 @@ function inlineLog(str: string) {
 export default class TextExpander extends Plugin {
     delay = 2000;
     cm: CodeMirror.Editor
+    lineEnding = '<--->'
 
     constructor(app: App, plugin: PluginManifest) {
         super(app, plugin);
@@ -57,7 +58,7 @@ export default class TextExpander extends Plugin {
             return doc.getCursor().line + 1
         }
 
-        return doc.getLine(lineNum) === '---'
+        return doc.getLine(lineNum) === this.lineEnding
             ? lineNum
             : this.getLastLineNum(doc, lineNum + 1)
     }
@@ -121,6 +122,7 @@ export default class TextExpander extends Plugin {
     async startTemplateMode(content: string, n: number) {
         const [searchFormula, ...templateContent] = content.split('\n')
         this.search(searchFormula.replace(/[\{\{|\}\}]/g, ''))
+
         const files = await this.getFoundAfterDelay() as TFile[]
         const currentView = this.app.workspace.activeLeaf.view
         let currentFileName = ''
@@ -142,7 +144,7 @@ export default class TextExpander extends Plugin {
                     str => r.cachedData
                         .split('')
                         .filter(
-                            (_: string, i: number) => i < Number(str.split(':')[1])
+                        (_: string, i: number) => i < Number(str.split(':')[1])
                         ).join('')
                 )
                 .replace(/\$lines:\d+/g,
@@ -165,7 +167,7 @@ export default class TextExpander extends Plugin {
 
         const changed = filesWithoutCurrent.map(file => repeatableContent.map(s => format(file, s)).join('\n'))
 
-        const result = heading.join('\n') + '\n' + changed.join('\n') + '\n' + footer.join('\n') + '\n\n---'
+        const result = heading.join('\n') + '\n' + changed.join('\n') + '\n' + footer.join('\n') + '\n\n' + this.lineEnding
 
         const fstLine = this.getFstLineNum(this.cm, n)
         const lstLine = this.getLastLineNum(this.cm, fstLine)
@@ -187,7 +189,7 @@ export default class TextExpander extends Plugin {
                     callback(result)
                 }, this.delay))
         }
-        const replaceLine = (content: string) => cmDoc.replaceRange(embedFormula + content + '\n\n---',
+        const replaceLine = (content: string) => cmDoc.replaceRange(embedFormula + content + '\n\n' + this.lineEnding,
             {line: fstLineNumToReplace, ch: 0},
             {line: lstLineNumToReplace, ch: cmDoc.getLine(lstLineNumToReplace).length}
         )
