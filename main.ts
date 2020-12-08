@@ -38,12 +38,12 @@ export default class TextExpander extends Plugin {
         const currentView = this.app.workspace.activeLeaf.view
 
         if (currentView instanceof FileView) {
-            return links.map(e => e.basename)
+            return links?.map(e => e.basename)
                 .filter(e => currentView.file.basename !== e)
-                .map(mapFunc).join('\n')
+                ?.map(mapFunc)?.join('\n')
         }
 
-        return links.map(e => e.basename).map(mapFunc).join('\n')
+        return links?.map(e => e.basename)?.map(mapFunc)?.join('\n')
     }
 
     getFstLineNum(doc: CodeMirror.Doc, line = 0): number {
@@ -106,7 +106,7 @@ export default class TextExpander extends Plugin {
     search(s: string) {
         // @ts-ignore
         const globalSearchFn = this.app.internalPlugins.getPluginById('global-search').instance.openGlobalSearch.bind(this)
-        const search = (query: string) => globalSearchFn(inlineLog(query))
+        const search = (query: string) => globalSearchFn(query)
 
         search(s)
     }
@@ -229,7 +229,7 @@ export default class TextExpander extends Plugin {
             '{{' + searchQuery + '}}\n' +
             '```\n'
 
-        search(inlineLog(searchQuery))
+        search(searchQuery)
         getFoundFilenames(replaceLine)
     }
 
