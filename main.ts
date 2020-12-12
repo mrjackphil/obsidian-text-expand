@@ -153,7 +153,7 @@ export default class TextExpander extends Plugin {
             const { frontmatter = null } = this.app.metadataCache.getCache(r.path)
 
             if (frontmatter) {
-                return frontmatter[s.split(':')[1]]
+                return frontmatter[s.split(':')[1]] || '';
             }
 
             return ''
@@ -177,7 +177,7 @@ export default class TextExpander extends Plugin {
                  .replace(new RegExp(this.lineEnding, 'g'), '')
             )
             // @ts-ignore
-            .replace(/\$frontmatter:.+?$/, s => getFrontMatter(s, r))
+            .replace(/\$frontmatter:[a-zA-Z0-9_-]+/, s => getFrontMatter(s, r))
             // @ts-ignore
             .replace(/\$letters+/g, r.cachedData.replace(new RegExp(this.lineEnding, 'g'), ''))
             // @ts-ignore
