@@ -138,8 +138,8 @@ export default class TextExpander extends Plugin {
         const currentView = this.app.workspace.activeLeaf.view
         let currentFileName = ''
 
-        const heading = templateContent.filter(e => e[0] === '^').map(([_, ...tail]) => tail)
-        const footer = templateContent.filter(e => e[0] === '>').map(([_, ...tail]) => tail)
+        const heading = templateContent.filter(e => e[0] === '^').map((s) => s.slice(1))
+        const footer = templateContent.filter(e => e[0] === '>').map((s) => s.slice(1))
         const repeatableContent = templateContent.filter(e => e[0] !== '^' && e[0] !== '>')
 
         if (currentView instanceof FileView) {
