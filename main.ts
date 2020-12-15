@@ -177,7 +177,7 @@ export default class TextExpander extends Plugin {
                  .replace(new RegExp(this.lineEnding, 'g'), '')
             )
             // @ts-ignore
-            .replace(/\$frontmatter:[a-zA-Z0-9_-]+/, s => getFrontMatter(s, r))
+            .replace(/\$frontmatter:[a-zA-Z0-9_-]+/g, s => getFrontMatter(s, r))
             // @ts-ignore
             .replace(/\$letters+/g, r.cachedData.replace(new RegExp(this.lineEnding, 'g'), ''))
             // @ts-ignore
