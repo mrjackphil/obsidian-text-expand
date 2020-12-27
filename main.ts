@@ -272,7 +272,7 @@ export default class TextExpander extends Plugin {
 
         const data = await this.loadData()
         this.delay = data?.delay || 2000
-        this.lineEnding = data.lineEnding || '<--->'
+        this.lineEnding = data?.lineEnding || '<--->'
     }
 
     onunload() {
