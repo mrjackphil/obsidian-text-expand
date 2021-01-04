@@ -190,7 +190,7 @@ export default class TextExpander extends Plugin {
 
         const changed = filesWithoutCurrent.map(file => repeatableContent.map(s => format(file, s)).join('\n'))
 
-        const result = heading.join('\n') + '\n' + changed.join('\n') + '\n' + footer.join('\n') + '\n\n' + this.lineEnding
+        const result =  '\n```\n\n' + heading.join('\n') + '\n' + changed.join('\n') + '\n' + footer.join('\n') + '\n\n' + this.lineEnding
 
         const fstLine = this.getFstLineNum(this.cm, n)
         const lstLine = this.getLastLineNum(this.cm, fstLine)

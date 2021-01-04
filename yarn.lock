@@ -204,8 +204,8 @@ minimatch@^3.0.4:
     brace-expansion "^1.1.7"
 
 "obsidian@https://github.com/obsidianmd/obsidian-api/tarball/master":
-  version "0.9.7"
-  resolved "https://github.com/obsidianmd/obsidian-api/tarball/master#8cbd761836526a23a1fcad9898f88bd337779bbe"
+  version "0.10.2"
+  resolved "https://github.com/obsidianmd/obsidian-api/tarball/master#58d88e75df55dd9f6902f51066536168535d95be"
   dependencies:
     "@types/codemirror" "0.0.98"
 
