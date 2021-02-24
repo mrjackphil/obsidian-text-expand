@@ -13,21 +13,21 @@ and then paste result. The output can be customized using [template feature](#te
 - If prompted about Safe Mode, you can disable safe mode and enable the plugin. Otherwise head to Settings, third-party plugins, make sure safe mode is off and enable the plugin from there.
 
 ## How to use
-
--   Type `{{SEARCH_QUERY}}` in your note where `SEARCH_QUERY` a text which you want to search. 
-Examples: `{{My Note}}`, `{{tag:#tag}}`.
--   Put a cursor on that line
--   Open command palette and find `Text {{expand}}:` commands (you can attach hotkeys in settings menu)
-
-It should wrap the `{{ }}` line and add notes which was found below.
-You can call command in a `{{ }}` line to update results.
+- You should wrap your search request like that
+```
+    ```expander
+    SEARCH_QUERY
+    ```
+```
+- Open command palette (`Ctrl + P`)
+- Find and run `Text expand: expand` command
+- It should search and put results below the wrapped request
 
 ### Template feature
-Once `{{ }}` line wrapped you can use template functionality to extend output.
-
+Using template feature you can customize an output. 
 - Put template below the SEARCH_QUERY line
 - Put a cursor inside code block with a templete 
--   Open command palette (`Ctrl+P`) and find `Text {{expand}}:` commands (you can attach hotkeys in settings menu)
+-   Open command palette (`Ctrl+P`) and find `Text expand: expand` command
 
 ![](./screenshots/3.png)
 ![](./screenshots/2.png)
@@ -35,23 +35,24 @@ Once `{{ }}` line wrapped you can use template functionality to extend output.
 To create a list:
 
     ```expander
-    {{Expander}}
+    SEARCH_QUERY
     - [[$filename]]
     ```
 
 or to create a table:
 
     ```expander
-    {{Expander}}
+    SEARCH_QUERY
     ^|Filename|Content|
     ^|---|---|
-    |$filename|$lines|
+    |$filename|$lines:1|
     ```
 
 
 Syntax looks like that:
+
     ```expander
-    {{Expander}}
+    SEARCH_QUERY
     ^This is a header
     This line will be repeated for each file
     Also, [[$filename]] <- this will be a link
