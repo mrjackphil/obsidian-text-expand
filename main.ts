@@ -31,7 +31,6 @@ export default class TextExpander extends Plugin {
 
         this.search = this.search.bind(this)
         this.initExpander = this.initExpander.bind(this)
-        this.getLastLineNum = this.getLastLineNum.bind(this)
         this.reformatLinks = this.reformatLinks.bind(this)
     }
 
@@ -45,63 +44,6 @@ export default class TextExpander extends Plugin {
         }
 
         return links?.map(e => e.basename)?.map(mapFunc)?.join('\n')
-    }
-
-    getFstLineNum(doc: CodeMirror.Doc, line = 0): number {
-        const lineNum = line === 0
-            ? doc.getCursor().line
-            : line
-
-        if (doc.lineCount() === lineNum) {
-            return doc.getCursor().line + 1
-        }
-
-        return doc.getLine(lineNum) === '```'
-            ? lineNum + 1
-            : this.getFstLineNum(doc, lineNum + 1)
-    }
-
-    getLastLineNum(doc: CodeMirror.Doc, line = 0): number {
-        const lineNum = line === 0
-            ? doc.getCursor().line
-            : line
-
-        if (doc.lineCount() === lineNum) {
-            return doc.getCursor().line + 1
-        }
-
-        return doc.getLine(lineNum) === this.lineEnding
-            ? lineNum
-            : this.getLastLineNum(doc, lineNum + 1)
-    }
-
-    getLinesOffsetToGoal(start: number, goal: string, step = 1): number {
-        const lineCount = this.cm.lineCount()
-        let offset = 0
-
-        while (!isNaN(start + offset) && start + offset < lineCount && start + offset >= 0) {
-            const result = goal === this.cm.getLine(start + offset)
-
-            if (result) {
-                return offset
-            }
-
-            offset += step
-        }
-
-        return start
-    }
-
-    getContentBetweenLines(fromLineNum: number, startLine: string, endLine: string) {
-        const {cm} = this
-        const topOffset = this.getLinesOffsetToGoal(fromLineNum, startLine, -1)
-        const botOffset = this.getLinesOffsetToGoal(fromLineNum, endLine, 1)
-
-        const topLine = fromLineNum + topOffset + 1
-        const botLine = fromLineNum + botOffset - 1
-
-        return cm.getRange({line: topLine || fromLineNum, ch: 0},
-            {line: botLine || fromLineNum, ch: cm.getLine(botLine)?.length })
     }
 
     search(s: string) {
@@ -119,16 +61,6 @@ export default class TextExpander extends Plugin {
             // @ts-ignore
             setTimeout(() => resolve(Array.from(view.dom.resultDomLookup.keys())), this.delay)
         })
-    }
-
-    checkTemplateMode(content: string) {
-        const hasTemplate = content.split('\n').length > 1
-
-        if (!hasTemplate) {
-            return false
-        }
-
-        return true
     }
 
     async startTemplateMode(query: ExpanderQuery, lastLine: number) {
@@ -197,39 +129,6 @@ export default class TextExpander extends Plugin {
         this.cm.replaceRange(result,
             {line: query.end + 1, ch: 0},
             {line: lastLine, ch: this.cm.getLine(lastLine).length})
-    }
-
-    startSimpleMode(cmDoc: CodeMirror.Doc, isEmbed: boolean, curNum: number, curText: string) {
-        const {reformatLinks, getLastLineNum, search} = this
-
-        const getFoundFilenames = (callback: (s: string) => any) => {
-            const searchLeaf = this.app.workspace.getLeavesOfType('search')[0]
-            searchLeaf.open(searchLeaf.view)
-                .then((view: View) => setTimeout(() => {
-                    // @ts-ignore
-                    const result = reformatLinks(Array.from(view.dom.resultDomLookup.keys()))
-                    callback(result)
-                }, this.delay))
-        }
-        const replaceLine = (content: string) => cmDoc.replaceRange(embedFormula + content + '\n\n' + this.lineEnding,
-            {line: fstLineNumToReplace, ch: 0},
-            {line: lstLineNumToReplace, ch: cmDoc.getLine(lstLineNumToReplace).length}
-        )
-
-        const fstLineNumToReplace = isEmbed
-            ? curNum - 1
-            : curNum
-        const lstLineNumToReplace = isEmbed
-            ? getLastLineNum(cmDoc)
-            : curNum
-
-        const searchQuery = curText.replace('{{', '').replace('}}', '')
-        const embedFormula = '```expander\n' +
-            '{{' + searchQuery + '}}\n' +
-            '```\n'
-
-        search(searchQuery)
-        getFoundFilenames(replaceLine)
     }
 
     initExpander() {
