@@ -1,3 +1,4 @@
+import { ExpanderQuery, formatContent, getAllExpandersQuery, getClosestQuery, getLastLineToReplace } from 'formatter';
 import {
     App,
     View,
@@ -130,13 +131,12 @@ export default class TextExpander extends Plugin {
         return true
     }
 
-    async startTemplateMode(content: string, n: number) {
-        const [searchFormula, ...templateContent] = content.split('\n')
-        this.search(searchFormula.replace(/[\{\{|\}\}]/g, ''))
-
+    async startTemplateMode(query: ExpanderQuery, lastLine: number) {
         const files = await this.getFoundAfterDelay() as TFile[]
         const currentView = this.app.workspace.activeLeaf.view
         let currentFileName = ''
+
+        const templateContent = query.template.split('\n')
 
         const heading = templateContent.filter(e => e[0] === '^').map((s) => s.slice(1))
         const footer = templateContent.filter(e => e[0] === '>').map((s) => s.slice(1))
@@ -188,16 +188,15 @@ export default class TextExpander extends Plugin {
             .replace(/\$path/g, r.path)
             .replace(/\$parent/g, r.parent.name)
 
-        const changed = filesWithoutCurrent.map(file => repeatableContent.map(s => format(file, s)).join('\n'))
+        const changed = repeatableContent.filter(e => e).length > 0
+            ? filesWithoutCurrent.map(file => repeatableContent.map(s => format(file, s)).join('\n'))
+            : filesWithoutCurrent.map(file => '- [[' + file.basename + ']]')
 
-        const result =  '\n```\n\n' + heading.join('\n') + '\n' + changed.join('\n') + '\n' + footer.join('\n') + '\n\n' + this.lineEnding
-
-        const fstLine = this.getFstLineNum(this.cm, n)
-        const lstLine = this.getLastLineNum(this.cm, fstLine)
+        const result = heading.join('\n') + '\n' + changed.join('\n') + '\n' + footer.join('\n') + '\n\n' + this.lineEnding
 
         this.cm.replaceRange(result,
-            {line: fstLine, ch: 0},
-            {line: lstLine, ch: this.cm.getLine(lstLine).length})
+            {line: query.end + 1, ch: 0},
+            {line: lastLine, ch: this.cm.getLine(lastLine).length})
     }
 
     startSimpleMode(cmDoc: CodeMirror.Doc, isEmbed: boolean, curNum: number, curText: string) {
@@ -242,22 +241,19 @@ export default class TextExpander extends Plugin {
 
         const cmDoc = this.cm = currentView.sourceMode.cmEditor
         const curNum = cmDoc.getCursor().line
-        const curText = cmDoc.getLine(curNum)
-        const workingLine = this.getContentBetweenLines(curNum, '```expander', '```') || curText
+        const content = cmDoc.getValue()
 
-        const hasFormulaRegexp = /^{{.+}}/
-        const isEmbed = workingLine.split('\n').length > 1 || cmDoc.getLine(curNum - 1) === '```expander'
+        const formatted = formatContent(content)
+        const findQueries = getAllExpandersQuery(formatted)
+        const closestQuery = getClosestQuery(findQueries, curNum)
 
-        if (!hasFormulaRegexp.test(workingLine)) {
-            return
+        if (!closestQuery) {
+            new Notification('Expand query not found')
+            return 
         }
 
-        if (isEmbed && this.checkTemplateMode(workingLine)) {
-            this.startTemplateMode(workingLine, curNum)
-            return
-        }
-
-        this.startSimpleMode(cmDoc, isEmbed, curNum, curText)
+        this.search(closestQuery.query)
+        this.startTemplateMode(closestQuery, getLastLineToReplace(formatted, closestQuery, this.lineEnding))
     }
 
     async onload() {

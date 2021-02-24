@@ -40,3 +40,15 @@ export function getClosestQuery(queries: ExpanderQuery[], lineNumber: number): E
         return Math.abs(b.start - lineNumber) < Math.abs(a.start - lineNumber) ? b : a;
     });
 }
+
+export function getLastLineToReplace(content: string[], query: ExpanderQuery, endline: string) {
+    const lineFrom = query.end
+
+    for (var i = lineFrom + 1; i < content.length; i++) {
+        if (content[i] === endline) {
+            return i
+        }
+    }
+
+    return lineFrom + 1
+}

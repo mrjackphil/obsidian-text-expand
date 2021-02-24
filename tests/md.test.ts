@@ -1,4 +1,4 @@
-import { ExpanderQuery, formatContent, getAllExpandersQuery, getClosestQuery } from '../formatter'
+import { ExpanderQuery, formatContent, getAllExpandersQuery, getClosestQuery, getLastLineToReplace } from '../formatter'
 
 const content = [
     '```expander',
@@ -85,5 +85,50 @@ describe('test query getter', () => {
         ]
 
         expect(getClosestQuery(expanders, 7).query).toBe('second')
+    })
+
+    test('should get line after query', () => {
+        const excontent = [
+            '```expander',
+            'test',
+            '```',
+            'some',
+            'some',
+            'some'
+        ]
+        const query: ExpanderQuery = {
+            start: 0,
+            end: 2,
+            query: 'test',
+            template: ''
+        }
+
+        const endline = '<-->'
+
+        const result = getLastLineToReplace(excontent, query, endline)
+        expect(result).toBe(3)
+    })
+
+    test('should get last line', () => {
+        const excontent = [
+            '```expander',
+            'test',
+            '```',
+            'some',
+            'some',
+            'some',
+            '<-->'
+        ]
+        const query: ExpanderQuery = {
+            start: 0,
+            end: 2,
+            query: 'test',
+            template: ''
+        }
+
+        const endline = '<-->'
+
+        const result = getLastLineToReplace(excontent, query, endline)
+        expect(result).toBe(6)
     })
 })
