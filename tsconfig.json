@@ -5,6 +5,7 @@
     "inlineSources": true,
     "module": "ESNext",
     "target": "es5",
+    "esModuleInterop": true,
     "downlevelIteration": true,
     "allowJs": true,
     "noImplicitAny": true,
