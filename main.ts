@@ -8,18 +8,8 @@ import {
     TFile,
     FileView,
     MarkdownView,
-    PluginManifest,
-    MetadataCache
+    PluginManifest
 } from 'obsidian';
-
-interface Files {
-    file: TFile
-}
-
-function inlineLog(str: string) {
-    console.log(str)
-    return str
-}
 
 export default class TextExpander extends Plugin {
     delay = 2000;
