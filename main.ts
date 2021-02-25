@@ -15,6 +15,7 @@ export default class TextExpander extends Plugin {
     delay = 2000;
     cm: CodeMirror.Editor
     lineEnding = '<--->'
+    defaultTemplate = '- [[$filename]]'
 
     constructor(app: App, plugin: PluginManifest) {
         super(app, plugin);
@@ -62,7 +63,10 @@ export default class TextExpander extends Plugin {
 
         const heading = templateContent.filter(e => e[0] === '^').map((s) => s.slice(1))
         const footer = templateContent.filter(e => e[0] === '>').map((s) => s.slice(1))
-        const repeatableContent = templateContent.filter(e => e[0] !== '^' && e[0] !== '>')
+        const repeatableContent = 
+            templateContent.filter(e => e[0] !== '^' && e[0] !== '>').filter(e => e).length === 0
+                ? [this.defaultTemplate]
+                : templateContent.filter(e => e[0] !== '^' && e[0] !== '>').filter(e => e)
 
         if (currentView instanceof FileView) {
             currentFileName = currentView.file.basename
@@ -71,7 +75,6 @@ export default class TextExpander extends Plugin {
         const filesWithoutCurrent = files.filter(file => file.basename !== currentFileName)
 
         const getFrontMatter = (s: string, r: TFile) => {
-            // @ts-ignore
             const { frontmatter = null } = this.app.metadataCache.getCache(r.path)
 
             if (frontmatter) {
@@ -98,7 +101,6 @@ export default class TextExpander extends Plugin {
                  .join('\n')
                  .replace(new RegExp(this.lineEnding, 'g'), '')
             )
-            // @ts-ignore
             .replace(/\$frontmatter:[a-zA-Z0-9_-]+/g, s => getFrontMatter(s, r))
             // @ts-ignore
             .replace(/\$letters+/g, r.cachedData.replace(new RegExp(this.lineEnding, 'g'), ''))
@@ -110,9 +112,7 @@ export default class TextExpander extends Plugin {
             .replace(/\$path/g, r.path)
             .replace(/\$parent/g, r.parent.name)
 
-        const changed = repeatableContent.filter(e => e).length > 0
-            ? filesWithoutCurrent.map(file => repeatableContent.map(s => format(file, s)).join('\n'))
-            : filesWithoutCurrent.map(file => '- [[' + file.basename + ']]')
+        const changed = filesWithoutCurrent.map(file => repeatableContent.map(s => format(file, s)).join('\n'))
 
         const result = heading.join('\n') + '\n' + changed.join('\n') + '\n' + footer.join('\n') + '\n\n' + this.lineEnding
 
@@ -158,6 +158,7 @@ export default class TextExpander extends Plugin {
         const data = await this.loadData()
         this.delay = data?.delay || 2000
         this.lineEnding = data?.lineEnding || '<--->'
+        this.defaultTemplate = data?.defaultTemplate || '- [[$filename]]'
     }
 
     onunload() {
@@ -190,7 +191,7 @@ class SettingTab extends PluginSettingTab {
                 slider.setValue(this.plugin.delay)
                 slider.onChange(value => {
                     this.plugin.delay = value
-                    this.plugin.saveData({ delay: value })
+                    this.plugin.saveData({ delay: value, lineEnding: this.plugin.lineEnding, defaultTemplate: this.plugin.defaultTemplate })
                 })
                 slider.setDynamicTooltip()
             })
@@ -202,7 +203,18 @@ class SettingTab extends PluginSettingTab {
                 text.setValue(this.plugin.lineEnding)
                     .onChange(val => {
                         this.plugin.lineEnding = val
-                        this.plugin.saveData({ delay: this.plugin.delay, lineEnding: val })
+                        this.plugin.saveData({ delay: this.plugin.delay, lineEnding: val, defaultTemplate: this.plugin.defaultTemplate })
+                    })
+            })
+
+        new Setting(containerEl)
+            .setName('Default template')
+            .setDesc('You can specify default template')
+            .addText(text => {
+                text.setValue(this.plugin.defaultTemplate)
+                    .onChange(val => {
+                        this.plugin.defaultTemplate = val
+                        this.plugin.saveData({ delay: this.plugin.delay, lineEnding: this.plugin.lineEnding, defaultTemplate: val })
                     })
             })
     }
