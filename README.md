@@ -6,6 +6,8 @@ This plugin will search files using [Obsidian search functionality](https://publ
 and then paste result. The output can be customized using [template feature](#template-feature).
 
 ## Install
+- Just use built-in plugin manager and find `Text expand` plugin
+### Manually
 - You need Obsidian v0.9.18+ for latest version of plugin
 - Get [Latest release](https://github.com/mrjackphil/obsidian-text-expand/releases/latest)
 - Extract files and place them to your vault's plugins folder: `<vault>/.obsidian/plugins/`
