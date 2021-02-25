@@ -74,6 +74,11 @@ Syntax looks like that:
 - `$path` - return path to file 
 - `$frontmatter:NAME` - return frontmatter value from field `NAME`
 
+## Settings
+- Delay (default: `2000ms`) - the plugin don't wait until search completed. It waits for a delay and paste result after that.
+- Line ending (default: `<--->`) - how will looks like the line below the expanded content
+- Default template (default: `- [[$filename]]`) - how will look the expanded content when no template provided
+
 ## Support
 - [Patreon](https://patreon.com/mrjackphil)
 - [Paypal](https://www.paypal.com/paypalme/mrjackphil)
