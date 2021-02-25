@@ -36,6 +36,10 @@ export function getAllExpandersQuery(content: string[]): ExpanderQuery[] {
 }
 
 export function getClosestQuery(queries: ExpanderQuery[], lineNumber: number): ExpanderQuery | undefined {
+    if (queries.length === 0) {
+        return undefined
+    }
+
     return queries.reduce((a, b) => {
         return Math.abs(b.start - lineNumber) < Math.abs(a.start - lineNumber) ? b : a;
     });
