@@ -128,7 +128,7 @@ export default class TextExpander extends Plugin {
 
         this.cm.replaceRange(result,
             {line: query.end + 1, ch: 0},
-            {line: lastLine, ch: this.cm.getLine(lastLine).length})
+            {line: lastLine, ch: this.cm.getLine(lastLine)?.length || 0})
     }
 
     initExpander() {
