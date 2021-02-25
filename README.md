@@ -31,9 +31,6 @@ Using template feature you can customize an output.
 - Put a cursor inside code block with a templete 
 -   Open command palette (`Ctrl+P`) and find `Text expand: expand` command
 
-![](./screenshots/3.png)
-![](./screenshots/2.png)
-
 To create a list:
 
     ```expander
