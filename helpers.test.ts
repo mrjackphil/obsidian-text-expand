@@ -1,4 +1,4 @@
-import { ExpanderQuery, formatContent, getAllExpandersQuery, getClosestQuery, getLastLineToReplace } from '../formatter'
+import { ExpanderQuery, formatContent, getAllExpandersQuery, getClosestQuery, getLastLineToReplace } from './helpers'
 
 const content = [
     '```expander',
