@@ -1,4 +1,4 @@
-# Text {{expand}}
+# Text expand
 
 ![](./screenshots/1.gif)
 
