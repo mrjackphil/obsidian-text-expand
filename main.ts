@@ -84,37 +84,49 @@ export default class TextExpander extends Plugin {
             return ''
         }
 
-        const format = (r: TFile, s: string) => s
-            .replace(/\$filename/g, r.basename)
-            .replace(/\$letters:\d+/g,
-                // @ts-ignore
-            str => r.cachedData
-                    .split('')
-                    .filter((_: string, i: number) => i < Number(str.split(':')[1]))
-                    .join(''))
-            .replace(/\$lines:\d+/g,
-              // @ts-ignore
+        const format = async (r: TFile, template: string) => {
+            const fileContent = (/\$letters|\$lines/.test(template))
+                ? await this.app.vault.cachedRead(r)
+                : ''
 
-         str => r.cachedData
-                 .split('\n')
-                 .filter((_: string, i: number) => i < Number(str.split(':')[1]))
-                 .join('\n')
-                 .replace(new RegExp(this.lineEnding, 'g'), '')
-            )
-            .replace(/\$frontmatter:[a-zA-Z0-9_-]+/g, s => getFrontMatter(s, r))
-            // @ts-ignore
-            .replace(/\$letters+/g, (_) => r.cachedData.replace(new RegExp(this.lineEnding, 'g'), ''))
-            // @ts-ignore
-            .replace(/\$lines+/g, (_) => r.cachedData.replace(new RegExp(this.lineEnding, 'g'), ''))
-            .replace(/\$ext/g, r.extension)
-            .replace(/\$created/g, String(r.stat.ctime))
-            .replace(/\$size/g, String(r.stat.size))
-            .replace(/\$path/g, r.path)
-            .replace(/\$parent/g, r.parent.name)
+            return template
+                .replace(/\$filename/g, r.basename)
+                .replace(/\$letters:\d+/g,
+                    str => fileContent
+                        .split('')
+                        .filter((_: string, i: number) => i < Number(str.split(':')[1]))
+                        .join(''))
+                .replace(/\$lines:\d+/g,
+                    str => fileContent
+                        .split('\n')
+                        .filter((_: string, i: number) => i < Number(str.split(':')[1]))
+                        .join('\n')
+                        .replace(new RegExp(this.lineEnding, 'g'), '')
+                )
+                .replace(/\$frontmatter:[a-zA-Z0-9_-]+/g, s => getFrontMatter(s, r))
+                .replace(/\$letters+/g, (_) => fileContent.replace(new RegExp(this.lineEnding, 'g'), ''))
+                .replace(/\$lines+/g, (_) => fileContent.replace(new RegExp(this.lineEnding, 'g'), ''))
+                .replace(/\$ext/g, r.extension)
+                .replace(/\$created/g, String(r.stat.ctime))
+                .replace(/\$size/g, String(r.stat.size))
+                .replace(/\$path/g, r.path)
+                .replace(/\$parent/g, r.parent.name)
+        }
 
-        const changed = filesWithoutCurrent.map(file => repeatableContent.map(s => format(file, s)).join('\n'))
+        const changed = await Promise.all(
+            filesWithoutCurrent
+                .map(async (file) => {
+                    const result = await Promise.all( repeatableContent .map(async (s) => await format(file, s) + '\n') )
+                    return result.join('')
+                })
+        )
 
-        const result = heading.join('\n') + '\n' + changed.join('\n') + '\n' + footer.join('\n') + '\n\n' + this.lineEnding
+        const result =
+            heading.join('\n') + '\n' +
+            changed.join('\n') + '\n' +
+            footer.join('\n') +
+            '\n\n' +
+            this.lineEnding
 
         this.cm.replaceRange(result,
             {line: query.end + 1, ch: 0},
