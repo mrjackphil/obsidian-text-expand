@@ -103,9 +103,9 @@ export default class TextExpander extends Plugin {
             )
             .replace(/\$frontmatter:[a-zA-Z0-9_-]+/g, s => getFrontMatter(s, r))
             // @ts-ignore
-            .replace(/\$letters+/g, r.cachedData.replace(new RegExp(this.lineEnding, 'g'), ''))
+            .replace(/\$letters+/g, (_) => r.cachedData.replace(new RegExp(this.lineEnding, 'g'), ''))
             // @ts-ignore
-            .replace(/\$lines+/g, r.cachedData.replace(new RegExp(this.lineEnding, 'g'), ''))
+            .replace(/\$lines+/g, (_) => r.cachedData.replace(new RegExp(this.lineEnding, 'g'), ''))
             .replace(/\$ext/g, r.extension)
             .replace(/\$created/g, String(r.stat.ctime))
             .replace(/\$size/g, String(r.stat.size))
