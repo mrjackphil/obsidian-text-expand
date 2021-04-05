@@ -116,7 +116,7 @@ export default class TextExpander extends Plugin {
         const changed = await Promise.all(
             filesWithoutCurrent
                 .map(async (file) => {
-                    const result = await Promise.all( repeatableContent .map(async (s) => await format(file, s) + '\n') )
+                    const result = await Promise.all( repeatableContent .map(async (s) => await format(file, s)) )
                     return result.join('')
                 })
         )
