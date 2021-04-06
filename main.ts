@@ -1,4 +1,11 @@
-import {ExpanderQuery, formatContent, getAllExpandersQuery, getClosestQuery, getLastLineToReplace} from 'helpers';
+import {
+    ExpanderQuery,
+    formatContent,
+    getAllExpandersQuery,
+    getClosestQuery,
+    getLastLineToReplace,
+    trimContent
+} from 'helpers';
 import {
     App,
     Plugin,
@@ -19,13 +26,13 @@ export default class TextExpander extends Plugin {
     seqs = [
         {name: 'filename', loop: true, format: (s: string, content: string, file: TFile) => file.basename},
         {
-            name: 'letters:\\d+', loop: true, format: (s: string, content: string, file: TFile) => content
+            name: 'letters:\\d+', loop: true, format: (s: string, content: string, file: TFile) => trimContent(content)
                 .split('')
                 .filter((_: string, i: number) => i < Number(s.split(':')[1]))
                 .join('')
         },
         {
-            name: 'lines:\\d+', loop: true, format: (s: string, content: string, file: TFile) => content
+            name: 'lines:\\d+', loop: true, format: (s: string, content: string, file: TFile) => trimContent(content)
                 .split('\n')
                 .filter((_: string, i: number) => i < Number(s.split(':')[1]))
                 .join('\n')
@@ -60,7 +67,6 @@ export default class TextExpander extends Plugin {
         this.initExpander = this.initExpander.bind(this)
         this.reformatLinks = this.reformatLinks.bind(this)
     }
-
 
     getFrontMatter(s: string, r: TFile) {
         const {frontmatter = null} = this.app.metadataCache.getCache(r.path)

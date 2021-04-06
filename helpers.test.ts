@@ -1,4 +1,11 @@
-import { ExpanderQuery, formatContent, getAllExpandersQuery, getClosestQuery, getLastLineToReplace } from './helpers'
+import {
+    ExpanderQuery,
+    formatContent,
+    getAllExpandersQuery,
+    getClosestQuery,
+    getLastLineToReplace,
+    trimContent
+} from './helpers'
 
 const content = [
     '```expander',
@@ -136,5 +143,19 @@ describe('test closest query getter', () => {
 
     test('should not throw error on empty array', () => {
         expect(getClosestQuery([], 7)).toBe(undefined)
+    })
+})
+
+describe('test trim content helper', () => {
+    test('remove empty lines', () => {
+        const result = trimContent(`  \ntest\n test2\n`)
+
+        expect(result).toBe(`test\ntest2\n`)
+    })
+
+    test('remove frontmatter lines', () => {
+        const result = trimContent(`---\nbla-bla\n---\nresult`)
+
+        expect(result).toBe(`result`)
     })
 })
