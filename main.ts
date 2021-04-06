@@ -121,7 +121,6 @@ export default class TextExpander extends Plugin {
 
         const filesWithoutCurrent = files.filter(file => file.basename !== currentFileName)
 
-
         const format = async (r: TFile, template: string) => {
             const fileContent = (/\$letters|\$lines/.test(template))
                 ? await this.app.vault.cachedRead(r)
@@ -135,7 +134,7 @@ export default class TextExpander extends Plugin {
             filesWithoutCurrent
                 .map(async (file) => {
                     const result = await Promise.all(repeatableContent.map(async (s) => await format(file, s)))
-                    return result.join('')
+                    return result.join('\n')
                 })
         )
 
