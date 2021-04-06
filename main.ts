@@ -19,13 +19,13 @@ export default class TextExpander extends Plugin {
     seqs = [
         {name: 'filename', loop: true, format: (s: string, content: string, file: TFile) => file.basename},
         {
-            name: 'letters:\d+', loop: true, format: (s: string, content: string, file: TFile) => content
+            name: 'letters:\\d+', loop: true, format: (s: string, content: string, file: TFile) => content
                 .split('')
                 .filter((_: string, i: number) => i < Number(s.split(':')[1]))
                 .join('')
         },
         {
-            name: 'lines:\d+', loop: true, format: (s: string, content: string, file: TFile) => content
+            name: 'lines:\\d+', loop: true, format: (s: string, content: string, file: TFile) => content
                 .split('\n')
                 .filter((_: string, i: number) => i < Number(s.split(':')[1]))
                 .join('\n')
