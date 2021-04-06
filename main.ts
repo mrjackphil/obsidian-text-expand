@@ -156,7 +156,17 @@ export default class TextExpander extends Plugin {
             {line: lastLine, ch: this.cm.getLine(lastLine)?.length || 0})
     }
 
-    initExpander() {
+    async runQuery(query: ExpanderQuery, content: string[]) {
+        if (!query) {
+            new Notification('Expand query not found')
+            return Promise.resolve()
+        }
+
+        this.search(query.query)
+        return await this.startTemplateMode(query, getLastLineToReplace(content, query, this.lineEnding))
+    }
+
+    initExpander(all = false) {
         const currentView = this.app.workspace.activeLeaf.view
 
         if (!(currentView instanceof MarkdownView)) {
@@ -171,13 +181,14 @@ export default class TextExpander extends Plugin {
         const findQueries = getAllExpandersQuery(formatted)
         const closestQuery = getClosestQuery(findQueries, curNum)
 
-        if (!closestQuery) {
-            new Notification('Expand query not found')
-            return
+        if (all) {
+            findQueries.reduce((promise, query) =>
+                promise.then(
+                    () => this.runQuery(query, formatted)), Promise.resolve()
+            )
+        } else {
+            this.runQuery(closestQuery, formatted)
         }
-
-        this.search(closestQuery.query)
-        this.startTemplateMode(closestQuery, getLastLineToReplace(formatted, closestQuery, this.lineEnding))
     }
 
     async onload() {
@@ -187,6 +198,13 @@ export default class TextExpander extends Plugin {
             id: 'editor-expand',
             name: 'expand',
             callback: this.initExpander,
+            hotkeys: []
+        })
+
+        this.addCommand({
+            id: 'editor-expand-all',
+            name: 'expand all',
+            callback: () => this.initExpander(true),
             hotkeys: []
         })
 
