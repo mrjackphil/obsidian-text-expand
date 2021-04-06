@@ -26,17 +26,25 @@ export default class TextExpander extends Plugin {
     seqs = [
         {name: 'filename', loop: true, format: (s: string, content: string, file: TFile) => file.basename},
         {
-            name: 'letters:\\d+', loop: true, format: (s: string, content: string, file: TFile) => trimContent(content)
-                .split('')
-                .filter((_: string, i: number) => i < Number(s.split(':')[1]))
-                .join('')
+            name: 'letters:\\d+', loop: true, format: (s: string, content: string, file: TFile) => {
+                const digits = Number(s.split(':')[1])
+
+                return trimContent(content)
+                    .split('')
+                    .filter((_: string, i: number) => i < digits)
+                    .join('')
+            }
         },
         {
-            name: 'lines:\\d+', loop: true, format: (s: string, content: string, file: TFile) => trimContent(content)
-                .split('\n')
-                .filter((_: string, i: number) => i < Number(s.split(':')[1]))
-                .join('\n')
-                .replace(new RegExp(this.lineEnding, 'g'), '')
+            name: 'lines:\\d+', loop: true, format: (s: string, content: string, file: TFile) => {
+                const digits = Number(s.split(':')[1])
+
+                return trimContent(content)
+                    .split('\n')
+                    .filter((_: string, i: number) => i < digits)
+                    .join('\n')
+                    .replace(new RegExp(this.lineEnding, 'g'), '')
+            }
         },
         {
             name: 'frontmatter:[a-zA-Z0-9_-]+',
@@ -133,7 +141,7 @@ export default class TextExpander extends Plugin {
                 : ''
 
             return this.seqs.reduce((acc, seq) =>
-                acc.replace(new RegExp('\\$' + seq.name, 'g'), seq.format(acc, fileContent, r)), template)
+                acc.replace(new RegExp('\\$' + seq.name, 'g'), replace => seq.format(replace, fileContent, r)), template)
         }
 
         const changed = await Promise.all(
@@ -154,6 +162,8 @@ export default class TextExpander extends Plugin {
         this.cm.replaceRange(result,
             {line: query.end + 1, ch: 0},
             {line: lastLine, ch: this.cm.getLine(lastLine)?.length || 0})
+
+        return Promise.resolve()
     }
 
     async runQuery(query: ExpanderQuery, content: string[]) {
@@ -178,13 +188,17 @@ export default class TextExpander extends Plugin {
         const content = cmDoc.getValue()
 
         const formatted = formatContent(content)
-        const findQueries = getAllExpandersQuery(formatted)
+        let findQueries = getAllExpandersQuery(formatted)
         const closestQuery = getClosestQuery(findQueries, curNum)
 
         if (all) {
-            findQueries.reduce((promise, query) =>
-                promise.then(
-                    () => this.runQuery(query, formatted)), Promise.resolve()
+            findQueries.reduce((promise, query, i) =>
+                promise.then( () => {
+                    const newContent = formatContent(cmDoc.getValue())
+                    const updatedQueries = getAllExpandersQuery(newContent)
+
+                    return this.runQuery(updatedQueries[i], newContent)
+                }), Promise.resolve()
             )
         } else {
             this.runQuery(closestQuery, formatted)
