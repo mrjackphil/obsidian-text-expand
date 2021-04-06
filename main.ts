@@ -121,12 +121,12 @@ export default class TextExpander extends Plugin {
                 })
         )
 
-        const result =
-            heading.join('\n') + '\n' +
-            changed.join('\n') + '\n' +
-            footer.join('\n') +
-            '\n\n' +
+        const result = [
+            heading.join('\n'),
+            changed.join('\n'),
+            footer.join('\n'),
             this.lineEnding
+        ].filter(e => e).join('\n')
 
         this.cm.replaceRange(result,
             {line: query.end + 1, ch: 0},
