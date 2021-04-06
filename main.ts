@@ -1,7 +1,6 @@
-import { ExpanderQuery, formatContent, getAllExpandersQuery, getClosestQuery, getLastLineToReplace } from 'helpers';
+import {ExpanderQuery, formatContent, getAllExpandersQuery, getClosestQuery, getLastLineToReplace} from 'helpers';
 import {
     App,
-    View,
     Plugin,
     PluginSettingTab,
     Setting,
@@ -17,12 +16,60 @@ export default class TextExpander extends Plugin {
     lineEnding = '<--->'
     defaultTemplate = '- [[$filename]]'
 
+    seqs = [
+        {name: 'filename', loop: true, format: (s: string, content: string, file: TFile) => file.basename},
+        {
+            name: 'letters:\d+', loop: true, format: (s: string, content: string, file: TFile) => content
+                .split('')
+                .filter((_: string, i: number) => i < Number(s.split(':')[1]))
+                .join('')
+        },
+        {
+            name: 'lines:\d+', loop: true, format: (s: string, content: string, file: TFile) => content
+                .split('\n')
+                .filter((_: string, i: number) => i < Number(s.split(':')[1]))
+                .join('\n')
+                .replace(new RegExp(this.lineEnding, 'g'), '')
+        },
+        {
+            name: 'frontmatter:[a-zA-Z0-9_-]+',
+            loop: true,
+            format: (s: string, content: string, file: TFile) => this.getFrontMatter(s, file)
+        },
+        {
+            name: 'letters+',
+            loop: true,
+            format: (s: string, content: string, file: TFile) => content.replace(new RegExp(this.lineEnding, 'g'), '')
+        },
+        {
+            name: 'lines+',
+            loop: true,
+            format: (s: string, content: string, file: TFile) => content.replace(new RegExp(this.lineEnding, 'g'), '')
+        },
+        {name: 'ext', loop: true, format: (s: string, content: string, file: TFile) => file.extension},
+        {name: 'created', loop: true, format: (s: string, content: string, file: TFile) => String(file.stat.ctime)},
+        {name: 'size', loop: true, format: (s: string, content: string, file: TFile) => String(file.stat.size)},
+        {name: 'path', loop: true, format: (s: string, content: string, file: TFile) => file.path},
+        {name: 'parent', loop: true, format: (s: string, content: string, file: TFile) => file.parent.name},
+    ]
+
     constructor(app: App, plugin: PluginManifest) {
         super(app, plugin);
 
         this.search = this.search.bind(this)
         this.initExpander = this.initExpander.bind(this)
         this.reformatLinks = this.reformatLinks.bind(this)
+    }
+
+
+    getFrontMatter(s: string, r: TFile) {
+        const {frontmatter = null} = this.app.metadataCache.getCache(r.path)
+
+        if (frontmatter) {
+            return frontmatter[s.split(':')[1]] || '';
+        }
+
+        return ''
     }
 
     reformatLinks(links: TFile[], mapFunc = (s: string) => '[[' + s + ']]') {
@@ -63,7 +110,7 @@ export default class TextExpander extends Plugin {
 
         const heading = templateContent.filter(e => e[0] === '^').map((s) => s.slice(1))
         const footer = templateContent.filter(e => e[0] === '>').map((s) => s.slice(1))
-        const repeatableContent = 
+        const repeatableContent =
             templateContent.filter(e => e[0] !== '^' && e[0] !== '>').filter(e => e).length === 0
                 ? [this.defaultTemplate]
                 : templateContent.filter(e => e[0] !== '^' && e[0] !== '>').filter(e => e)
@@ -74,49 +121,20 @@ export default class TextExpander extends Plugin {
 
         const filesWithoutCurrent = files.filter(file => file.basename !== currentFileName)
 
-        const getFrontMatter = (s: string, r: TFile) => {
-            const { frontmatter = null } = this.app.metadataCache.getCache(r.path)
-
-            if (frontmatter) {
-                return frontmatter[s.split(':')[1]] || '';
-            }
-
-            return ''
-        }
 
         const format = async (r: TFile, template: string) => {
             const fileContent = (/\$letters|\$lines/.test(template))
                 ? await this.app.vault.cachedRead(r)
                 : ''
 
-            return template
-                .replace(/\$filename/g, r.basename)
-                .replace(/\$letters:\d+/g,
-                    str => fileContent
-                        .split('')
-                        .filter((_: string, i: number) => i < Number(str.split(':')[1]))
-                        .join(''))
-                .replace(/\$lines:\d+/g,
-                    str => fileContent
-                        .split('\n')
-                        .filter((_: string, i: number) => i < Number(str.split(':')[1]))
-                        .join('\n')
-                        .replace(new RegExp(this.lineEnding, 'g'), '')
-                )
-                .replace(/\$frontmatter:[a-zA-Z0-9_-]+/g, s => getFrontMatter(s, r))
-                .replace(/\$letters+/g, (_) => fileContent.replace(new RegExp(this.lineEnding, 'g'), ''))
-                .replace(/\$lines+/g, (_) => fileContent.replace(new RegExp(this.lineEnding, 'g'), ''))
-                .replace(/\$ext/g, r.extension)
-                .replace(/\$created/g, String(r.stat.ctime))
-                .replace(/\$size/g, String(r.stat.size))
-                .replace(/\$path/g, r.path)
-                .replace(/\$parent/g, r.parent.name)
+            return this.seqs.reduce((acc, seq) =>
+                acc.replace(new RegExp('\\$' + seq.name, 'g'), seq.format(acc, fileContent, r)), template)
         }
 
         const changed = await Promise.all(
             filesWithoutCurrent
                 .map(async (file) => {
-                    const result = await Promise.all( repeatableContent .map(async (s) => await format(file, s)) )
+                    const result = await Promise.all(repeatableContent.map(async (s) => await format(file, s)))
                     return result.join('')
                 })
         )
@@ -150,7 +168,7 @@ export default class TextExpander extends Plugin {
 
         if (!closestQuery) {
             new Notification('Expand query not found')
-            return 
+            return
         }
 
         this.search(closestQuery.query)
@@ -203,7 +221,11 @@ class SettingTab extends PluginSettingTab {
                 slider.setValue(this.plugin.delay)
                 slider.onChange(value => {
                     this.plugin.delay = value
-                    this.plugin.saveData({ delay: value, lineEnding: this.plugin.lineEnding, defaultTemplate: this.plugin.defaultTemplate })
+                    this.plugin.saveData({
+                        delay: value,
+                        lineEnding: this.plugin.lineEnding,
+                        defaultTemplate: this.plugin.defaultTemplate
+                    })
                 })
                 slider.setDynamicTooltip()
             })
@@ -215,7 +237,11 @@ class SettingTab extends PluginSettingTab {
                 text.setValue(this.plugin.lineEnding)
                     .onChange(val => {
                         this.plugin.lineEnding = val
-                        this.plugin.saveData({ delay: this.plugin.delay, lineEnding: val, defaultTemplate: this.plugin.defaultTemplate })
+                        this.plugin.saveData({
+                            delay: this.plugin.delay,
+                            lineEnding: val,
+                            defaultTemplate: this.plugin.defaultTemplate
+                        })
                     })
             })
 
@@ -226,7 +252,11 @@ class SettingTab extends PluginSettingTab {
                 text.setValue(this.plugin.defaultTemplate)
                     .onChange(val => {
                         this.plugin.defaultTemplate = val
-                        this.plugin.saveData({ delay: this.plugin.delay, lineEnding: this.plugin.lineEnding, defaultTemplate: val })
+                        this.plugin.saveData({
+                            delay: this.plugin.delay,
+                            lineEnding: this.plugin.lineEnding,
+                            defaultTemplate: val
+                        })
                     })
             })
     }
