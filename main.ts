@@ -1,8 +1,8 @@
 import {
-    ExpanderQuery,
+    ExpanderQuery, FileHeader,
     formatContent,
     getAllExpandersQuery,
-    getClosestQuery,
+    getClosestQuery, getHeadersFromContent,
     getLastLineToReplace,
     trimContent
 } from 'helpers';
@@ -60,6 +60,33 @@ export default class TextExpander extends Plugin {
             name: 'lines+',
             loop: true,
             format: (s: string, content: string, file: TFile) => content.replace(new RegExp(this.lineEnding, 'g'), '')
+        },
+        {
+            name: 'header:(#+\\w+|"#+.+?")',
+            loop: true,
+            format: (s: string, content: string, file: TFile) => {
+                const header = s.replace('$header:', '').replace(/"/g, '')
+                const neededLevel = header.split("#").length - 1
+                const neededTitle = header.replace(/^#+/g, '')
+
+                const contentHeaders = getHeadersFromContent(content)
+                    .filter(head => head.deep === neededLevel)
+
+                const matchedHeaderRange = (heads: FileHeader[], titleToFind: string): [number, number | undefined] => {
+                    console.log(heads, titleToFind)
+                    for (let i = 0; i < heads.length; i++) {
+                        if (heads[i].name === titleToFind) {
+                            return [heads[i].line, heads[i + 1]?.line]
+                        }
+                    }
+
+                    return [0, undefined]
+                }
+
+                console.log(matchedHeaderRange(contentHeaders, neededTitle))
+
+                return content.split('\n').slice(...matchedHeaderRange(contentHeaders, neededTitle)).join('\n')
+            }
         },
         {name: 'ext', loop: true, format: (s: string, content: string, file: TFile) => file.extension},
         {name: 'created', loop: true, format: (s: string, content: string, file: TFile) => String(file.stat.ctime)},
@@ -136,7 +163,7 @@ export default class TextExpander extends Plugin {
         const filesWithoutCurrent = files.filter(file => file.basename !== currentFileName)
 
         const format = async (r: TFile, template: string) => {
-            const fileContent = (/\$letters|\$lines/.test(template))
+            const fileContent = (/\$letters|\$lines|\$header/.test(template))
                 ? await this.app.vault.cachedRead(r)
                 : ''
 
