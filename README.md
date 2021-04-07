@@ -73,6 +73,7 @@ Syntax looks like that:
 - `$parent` - return parent folder
 - `$path` - return path to file 
 - `$frontmatter:NAME` - return frontmatter value from field `NAME`
+- $header:HEADER - extract content of the HEADER, ex. `$header:##Ideas` or `$header:"## Plugins for Obsidian"`
 
 ## Settings
 - Delay (default: `2000ms`) - the plugin don't wait until search completed. It waits for a delay and paste result after that.
