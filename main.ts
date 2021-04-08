@@ -48,7 +48,7 @@ export default class TextExpander extends Plugin {
             format: (s: string, content: string, file: TFile) => content.replace(new RegExp(this.lineEnding, 'g'), '')
         },
         {
-            name: 'header:(#+(\\w|\\s)+|"#+.+?")',
+            name: 'header:(#+((\\w|\\s)+|"#+.+?"|))',
             loop: true,
             readContent: true,
             format: (s: string, content: string, file: TFile) => {
@@ -61,16 +61,19 @@ export default class TextExpander extends Plugin {
 
                 const matchedHeaderRange = (heads: FileHeader[], titleToFind: string): [number, number | undefined] => {
                     for (let i = 0; i < heads.length; i++) {
-                        if (!titleToFind) {
-
-                        }
-
                         if (heads[i].name === titleToFind) {
                             return [heads[i].line, heads[i + 1]?.line]
                         }
                     }
 
                     return undefined
+                }
+
+                if (!neededTitle) {
+                    return neededDeepLevelHeaders
+                        .map((h, i) => [h.line, neededDeepLevelHeaders[i + 1]?.line])
+                        .map(([s, e]) => content.split('\n').slice(s, e).join('\n'))
+                        .join('\n')
                 }
 
                 const matchedRange = matchedHeaderRange(neededDeepLevelHeaders, neededTitle)
