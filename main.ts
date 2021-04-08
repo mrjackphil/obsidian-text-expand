@@ -138,7 +138,24 @@ export default class TextExpander extends Plugin {
         const globalSearchFn = this.app.internalPlugins.getPluginById('global-search').instance.openGlobalSearch.bind(this)
         const search = (query: string) => globalSearchFn(query)
 
+        const leftSplitState = {
+            // @ts-ignore
+            collapsed: this.app.workspace.leftSplit.collapsed,
+            // @ts-ignore
+            tab: this.app.workspace.leftSplit.children[0].currentTab
+        }
+
         search(s)
+        if (leftSplitState.collapsed) {
+            // @ts-ignore
+            this.app.workspace.leftSplit.collapse()
+        }
+
+        // @ts-ignore
+        if (leftSplitState.tab !== this.app.workspace.leftSplit.children[0].currentTab) {
+            // @ts-ignore
+            this.app.workspace.leftSplit.children[0].selectTabIndex(leftSplitState.tab)
+        }
     }
 
     async getFoundAfterDelay() {
