@@ -24,9 +24,9 @@ export default class TextExpander extends Plugin {
     defaultTemplate = '- [[$filename]]'
 
     seqs = [
-        {name: 'filename', loop: true, format: (_s: string, _content: string, file: TFile) => file.basename},
+        {name: '\\$filename', loop: true, format: (_s: string, _content: string, file: TFile) => file.basename},
         {
-            name: 'lines:\\d+', loop: true, readContent: true, format: (s: string, content: string, _file: TFile) => {
+            name: '\\$lines:\\d+', loop: true, readContent: true, format: (s: string, content: string, _file: TFile) => {
                 const digits = Number(s.split(':')[1])
 
                 return trimContent(content)
@@ -37,18 +37,18 @@ export default class TextExpander extends Plugin {
             }
         },
         {
-            name: 'frontmatter:[a-zA-Z0-9_-]+',
+            name: '\\$frontmatter:[a-zA-Z0-9_-]+',
             loop: true,
             format: (s: string, _content: string, file: TFile) => this.getFrontMatter(s, file)
         },
         {
-            name: 'lines+',
+            name: '\\$lines+',
             loop: true,
             readContent: true,
             format: (s: string, content: string, file: TFile) => content.replace(new RegExp(this.lineEnding, 'g'), '')
         },
         {
-            name: 'header:(#+((\\w|\\s)+|"#+.+?"|))',
+            name: '\\$header:(#+((\\w|\\s)+|"#+.+?"|))',
             loop: true,
             readContent: true,
             format: (s: string, content: string, file: TFile) => {
@@ -56,8 +56,8 @@ export default class TextExpander extends Plugin {
                 const neededLevel = header.split("#").length - 1
                 const neededTitle = header.replace(/^#+/g, '').trim()
 
-                const neededDeepLevelHeaders = getHeadersFromContent(content)
-                    .filter(head => head.deep === neededLevel)
+                const headers = getHeadersFromContent(content)
+                const neededDeepLevelHeaders = headers.filter(head => head.deep === neededLevel)
 
                 const matchedHeaderRange = (heads: FileHeader[], titleToFind: string): [number, number | undefined] => {
                     for (let i = 0; i < heads.length; i++) {
@@ -80,11 +80,27 @@ export default class TextExpander extends Plugin {
                 return matchedRange ? content.split('\n').slice(...matchedRange).join('\n') : ''
             }
         },
-        {name: 'ext', loop: true, format: (s: string, content: string, file: TFile) => file.extension},
-        {name: 'created', loop: true, format: (s: string, content: string, file: TFile) => String(file.stat.ctime)},
-        {name: 'size', loop: true, format: (s: string, content: string, file: TFile) => String(file.stat.size)},
-        {name: 'path', loop: true, format: (s: string, content: string, file: TFile) => file.path},
-        {name: 'parent', loop: true, format: (s: string, content: string, file: TFile) => file.parent.name},
+        {
+            name: '^(.+|)\\$blocks',
+            readContent: true,
+            loop: true,
+            format: (s: string, content: string, file: TFile) => {
+                return content
+                    .split('\n')
+                    .filter(e => /\^\w+$/.test(e))
+                    .map(e => s
+                        .replace(
+                            '$blocks',
+                            `(${encodeURIComponent(file.basename)}#${e.replace(/^.+?(\^\w+$)/, '$1')})`
+                        ))
+                    .join('\n')
+            }
+        },
+        {name: '\\$ext', loop: true, format: (s: string, content: string, file: TFile) => file.extension},
+        {name: '\\$created', loop: true, format: (s: string, content: string, file: TFile) => String(file.stat.ctime)},
+        {name: '\\$size', loop: true, format: (s: string, content: string, file: TFile) => String(file.stat.size)},
+        {name: '\\$path', loop: true, format: (s: string, content: string, file: TFile) => file.path},
+        {name: '\\$parent', loop: true, format: (s: string, content: string, file: TFile) => file.parent.name},
     ]
 
     constructor(app: App, plugin: PluginManifest) {
@@ -155,12 +171,12 @@ export default class TextExpander extends Plugin {
         const filesWithoutCurrent = files.filter(file => file.basename !== currentFileName)
 
         const format = async (r: TFile, template: string) => {
-            const fileContent = (new RegExp(this.seqs.filter(e => e.readContent).map(e => '\\$' + e.name).join('|')).test(template))
+            const fileContent = (new RegExp(this.seqs.filter(e => e.readContent).map(e => e.name).join('|')).test(template))
                 ? await this.app.vault.cachedRead(r)
                 : ''
 
             return this.seqs.reduce((acc, seq) =>
-                acc.replace(new RegExp('\\$' + seq.name, 'g'), replace => seq.format(replace, fileContent, r)), template)
+                acc.replace(new RegExp(seq.name, 'g'), replace => seq.format(replace, fileContent, r)), template)
         }
 
         const changed = await Promise.all(
