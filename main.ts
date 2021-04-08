@@ -56,7 +56,7 @@ export default class TextExpander extends Plugin {
                 const neededLevel = header.split("#").length - 1
                 const neededTitle = header.replace(/^#+/g, '').trim()
 
-                const contentHeaders = getHeadersFromContent(content)
+                const neededDeepLevelHeaders = getHeadersFromContent(content)
                     .filter(head => head.deep === neededLevel)
 
                 const matchedHeaderRange = (heads: FileHeader[], titleToFind: string): [number, number | undefined] => {
@@ -73,8 +73,8 @@ export default class TextExpander extends Plugin {
                     return undefined
                 }
 
-                const ranges = matchedHeaderRange(contentHeaders, neededTitle)
-                return ranges ? content.split('\n').slice(...ranges).join('\n') : ''
+                const matchedRange = matchedHeaderRange(neededDeepLevelHeaders, neededTitle)
+                return matchedRange ? content.split('\n').slice(...matchedRange).join('\n') : ''
             }
         },
         {name: 'ext', loop: true, format: (s: string, content: string, file: TFile) => file.extension},
