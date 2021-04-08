@@ -1,5 +1,9 @@
 # Text expand
 
+> Hey, if you like this plugin, you can support me using [Patreon](https://patreon.com/mrjackphil), [Paypal](https://www.paypal.com/paypalme/mrjackphil) or [Buy me a cofee](https://www.buymeacoffee.com/mrjackphil). 
+> Or you can just share how plugin improves your note-taking experience. 
+> Or just send me a message :)
+
 ![](./screenshots/1.gif)
 
 This plugin will search files using [Obsidian search functionality](https://publish.obsidian.md/help/Plugins/Search) 
@@ -64,8 +68,7 @@ Syntax looks like that:
 
 #### Special sequences
 - `$filename` - return a basename of a file
-- `$letters`, `$lines` - return the full content of the file
-- `$letters:10` - return 10 letters from the file. 10 could be replaced on any number
+- `$lines` - return the full content of the file
 - `$lines:10` - return 10 lines from the file. 10 could be replaced on any number
 - `$ext` - return extension of the file
 - `$created`
@@ -80,6 +83,3 @@ Syntax looks like that:
 - Line ending (default: `<--->`) - how will looks like the line below the expanded content
 - Default template (default: `- [[$filename]]`) - how will look the expanded content when no template provided
 
-## Support
-- [Patreon](https://patreon.com/mrjackphil)
-- [Paypal](https://www.paypal.com/paypalme/mrjackphil)
