@@ -48,31 +48,33 @@ export default class TextExpander extends Plugin {
             format: (s: string, content: string, file: TFile) => content.replace(new RegExp(this.lineEnding, 'g'), '')
         },
         {
-            name: 'header:(#+\\w+|"#+.+?")',
+            name: 'header:(#+(\\w|\\s)+|"#+.+?")',
             loop: true,
             readContent: true,
             format: (s: string, content: string, file: TFile) => {
                 const header = s.replace('$header:', '').replace(/"/g, '')
                 const neededLevel = header.split("#").length - 1
-                const neededTitle = header.replace(/^#+/g, '')
+                const neededTitle = header.replace(/^#+/g, '').trim()
 
                 const contentHeaders = getHeadersFromContent(content)
                     .filter(head => head.deep === neededLevel)
 
                 const matchedHeaderRange = (heads: FileHeader[], titleToFind: string): [number, number | undefined] => {
-                    console.log(heads, titleToFind)
                     for (let i = 0; i < heads.length; i++) {
+                        if (!titleToFind) {
+
+                        }
+
                         if (heads[i].name === titleToFind) {
                             return [heads[i].line, heads[i + 1]?.line]
                         }
                     }
 
-                    return [0, undefined]
+                    return undefined
                 }
 
-                console.log(matchedHeaderRange(contentHeaders, neededTitle))
-
-                return content.split('\n').slice(...matchedHeaderRange(contentHeaders, neededTitle)).join('\n')
+                const ranges = matchedHeaderRange(contentHeaders, neededTitle)
+                return ranges ? content.split('\n').slice(...ranges).join('\n') : ''
             }
         },
         {name: 'ext', loop: true, format: (s: string, content: string, file: TFile) => file.extension},

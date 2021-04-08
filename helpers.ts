@@ -20,7 +20,7 @@ export function getHeadersFromContent(content: string): FileHeader[] {
             return {
                 deep,
                 line,
-                name: e.replace(/^#+/g, '').trim()
+                name: e.replace(/^#+/g, '').trim().toLowerCase()
             }
         })
 }
