@@ -78,6 +78,7 @@ Syntax looks like that:
 - `$frontmatter:NAME` - return frontmatter value from field `NAME`
 - $header:## - extract content of all `##` headers in a file
 - $header:### HEADER - extract content of the HEADER, ex. `$header:##Ideas` or `$header:"## Plugins for Obsidian"`
+- $blocks - extract all blocks paths from the note
 
 ## Settings
 - Delay (default: `2000ms`) - the plugin don't wait until search completed. It waits for a delay and paste result after that.
