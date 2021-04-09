@@ -61,7 +61,7 @@ export default class TextExpander extends Plugin {
 
                 const matchedHeaderRange = (heads: FileHeader[], titleToFind: string): [number, number | undefined] => {
                     for (let i = 0; i < heads.length; i++) {
-                        if (heads[i].name === titleToFind) {
+                        if (heads[i].name.toLowerCase() === titleToFind.toLowerCase()) {
                             return [heads[i].line, heads[i + 1]?.line]
                         }
                     }
