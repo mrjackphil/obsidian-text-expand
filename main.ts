@@ -1,8 +1,8 @@
 import {
-    ExpanderQuery, FileHeader,
+    ExpanderQuery,
     formatContent,
     getAllExpandersQuery,
-    getClosestQuery, getHeadersFromContent,
+    getClosestQuery,
     getLastLineToReplace,
     trimContent
 } from 'helpers';
@@ -24,8 +24,8 @@ export default class TextExpander extends Plugin {
     defaultTemplate = '- [[$filename]]'
 
     seqs = [
-        {name: '\\$filename', loop: true, format: (_s: string, _content: string, file: TFile) => file.basename},
-        {name: '\\$link', loop: true, format: (_s: string, _content: string, file: TFile) => this.app.fileManager.generateMarkdownLink(file, file.path)},
+        {name: '\\$filename', loop: true, format: (_s: string, _content: string, file: TFile) => file.basename, desc: 'name of the founded file'},
+        {name: '\\$link', loop: true, format: (_s: string, _content: string, file: TFile) => this.app.fileManager.generateMarkdownLink(file, file.path), desc: 'link based on Obsidian settings'},
         {
             name: '\\$lines:\\d+', loop: true, readContent: true, format: (s: string, content: string, _file: TFile) => {
                 const digits = Number(s.split(':')[1])
@@ -35,51 +35,52 @@ export default class TextExpander extends Plugin {
                     .filter((_: string, i: number) => i < digits)
                     .join('\n')
                     .replace(new RegExp(this.lineEnding, 'g'), '')
-            }
+            },
+            desc: 'specified count of lines from the found file'
         },
         {
             name: '\\$frontmatter:[a-zA-Z0-9_-]+',
             loop: true,
-            format: (s: string, _content: string, file: TFile) => this.getFrontMatter(s, file)
+            format: (s: string, _content: string, file: TFile) => this.getFrontMatter(s, file),
+            desc: 'value from the frontmatter key in the found file'
         },
         {
             name: '\\$lines+',
             loop: true,
             readContent: true,
-            format: (s: string, content: string, file: TFile) => content.replace(new RegExp(this.lineEnding, 'g'), '')
+            format: (s: string, content: string, _file: TFile) => content.replace(new RegExp(this.lineEnding, 'g'), ''),
+            desc: 'all content from the found file'
         },
         {
-            name: '\\$header:(#+((\\w|\\s)+|"#+.+?"|))',
+            name: '^(.+|)\\$header:.+',
             loop: true,
             readContent: true,
             format: (s: string, content: string, file: TFile) => {
-                const header = s.replace('$header:', '').replace(/"/g, '')
+                const prefix = s.slice(0, s.indexOf('$'))
+                const header = s.slice(s.indexOf('$')).replace('$header:', '').replace(/"/g, '')
                 const neededLevel = header.split("#").length - 1
                 const neededTitle = header.replace(/^#+/g, '').trim()
 
-                const headers = getHeadersFromContent(content)
-                const neededDeepLevelHeaders = headers.filter(head => head.deep === neededLevel)
+                const metadata = this.app.metadataCache.getFileCache(file)
 
-                const matchedHeaderRange = (heads: FileHeader[], titleToFind: string): [number, number | undefined] => {
-                    for (let i = 0; i < heads.length; i++) {
-                        if (heads[i].name.toLowerCase() === titleToFind.toLowerCase()) {
-                            return [heads[i].line, heads[i + 1]?.line]
-                        }
+                return metadata.headings.filter(e => {
+                    const tests = [
+                        [neededTitle, e.heading.includes(neededTitle)],
+                        [neededLevel, e.level === neededLevel]
+                    ].filter(e => e[0])
+
+                    if (tests.length) {
+                        return tests.map(e => e[1]).every(e => e === true)
                     }
 
-                    return undefined
-                }
+                    return true
+                })
+                    .map(h => this.app.fileManager.generateMarkdownLink(file, file.path, '#' + h.heading))
+                    .map(link => prefix + link)
+                    .join('\n') || ''
 
-                if (!neededTitle) {
-                    return neededDeepLevelHeaders
-                        .map((h, i) => [h.line, neededDeepLevelHeaders[i + 1]?.line])
-                        .map(([s, e]) => content.split('\n').slice(s, e).join('\n'))
-                        .join('\n')
-                }
-
-                const matchedRange = matchedHeaderRange(neededDeepLevelHeaders, neededTitle)
-                return matchedRange ? content.split('\n').slice(...matchedRange).join('\n') : ''
-            }
+            },
+            desc: 'headings from founded files. $header:## - return all level 2 headings. $header:Title - return all heading which match the string. Can be prepended like: - !$header:## to transclude the headings.'
         },
         {
             name: '^(.+|)\\$blocks',
@@ -95,13 +96,14 @@ export default class TextExpander extends Plugin {
                             `(${encodeURIComponent(file.basename)}#${e.replace(/^.+?(\^\w+$)/, '$1')})`
                         ))
                     .join('\n')
-            }
+            },
+            desc: 'block ids from the found files. Can be prepended.'
         },
-        {name: '\\$ext', loop: true, format: (s: string, content: string, file: TFile) => file.extension},
-        {name: '\\$created', loop: true, format: (s: string, content: string, file: TFile) => String(file.stat.ctime)},
-        {name: '\\$size', loop: true, format: (s: string, content: string, file: TFile) => String(file.stat.size)},
-        {name: '\\$path', loop: true, format: (s: string, content: string, file: TFile) => file.path},
-        {name: '\\$parent', loop: true, format: (s: string, content: string, file: TFile) => file.parent.name},
+        {name: '\\$ext', loop: true, format: (s: string, content: string, file: TFile) => file.extension, desc: 'return file extension'},
+        {name: '\\$created', loop: true, format: (s: string, content: string, file: TFile) => String(file.stat.ctime), desc: 'created time'},
+        {name: '\\$size', loop: true, format: (s: string, content: string, file: TFile) => String(file.stat.size), desc: 'size of the file'},
+        {name: '\\$path', loop: true, format: (s: string, content: string, file: TFile) => file.path, desc: 'path to the found file'},
+        {name: '\\$parent', loop: true, format: (s: string, content: string, file: TFile) => file.parent.name, desc: 'parent folder name'},
     ]
 
     constructor(app: App, plugin: PluginManifest) {
@@ -206,10 +208,11 @@ export default class TextExpander extends Plugin {
         )
 
         const result = [
-            '\n',
+            ' ',
             heading.join('\n'),
             changed.join('\n'),
             footer.join('\n'),
+            ' ',
             this.lineEnding
         ].filter(e => e).join('\n')
 
@@ -350,5 +353,21 @@ class SettingTab extends PluginSettingTab {
                         })
                     })
             })
+
+        new Setting(containerEl)
+            .setName('Sequences')
+            .setDesc(
+                (() => {
+                    const fragment = new DocumentFragment()
+                    const pre = fragment.createEl('pre')
+                    pre.innerText = this.plugin.seqs
+                        .map(e =>
+                            e.name.replace('\\', '') + ': ' + (e.desc || '')
+                        ).join('\n')
+                    fragment.appendChild(pre)
+
+                    return fragment
+                })()
+            )
     }
 }
