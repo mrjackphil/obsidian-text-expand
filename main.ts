@@ -205,6 +205,7 @@ export default class TextExpander extends Plugin {
         )
 
         const result = [
+            '\n',
             heading.join('\n'),
             changed.join('\n'),
             footer.join('\n'),
