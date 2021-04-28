@@ -25,6 +25,7 @@ export default class TextExpander extends Plugin {
 
     seqs = [
         {name: '\\$filename', loop: true, format: (_s: string, _content: string, file: TFile) => file.basename},
+        {name: '\\$link', loop: true, format: (_s: string, _content: string, file: TFile) => this.app.fileManager.generateMarkdownLink(file, file.path)},
         {
             name: '\\$lines:\\d+', loop: true, readContent: true, format: (s: string, content: string, _file: TFile) => {
                 const digits = Number(s.split(':')[1])
@@ -278,7 +279,7 @@ export default class TextExpander extends Plugin {
         const data = await this.loadData()
         this.delay = data?.delay || 2000
         this.lineEnding = data?.lineEnding || '<--->'
-        this.defaultTemplate = data?.defaultTemplate || '- [[$filename]]'
+        this.defaultTemplate = data?.defaultTemplate || '- $link'
     }
 
     onunload() {
