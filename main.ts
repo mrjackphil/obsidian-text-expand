@@ -22,6 +22,7 @@ export default class TextExpander extends Plugin {
     cm: CodeMirror.Editor
     lineEnding = '<--->'
     defaultTemplate = '- [[$filename]]'
+    autoExpand = false
 
     seqs = [
         {name: '\\$filename', loop: true, format: (_s: string, _content: string, file: TFile) => file.basename, desc: 'name of the founded file'},
@@ -243,6 +244,7 @@ export default class TextExpander extends Plugin {
         const cmDoc = this.cm = currentView.sourceMode.cmEditor
         const curNum = cmDoc.getCursor().line
         const content = cmDoc.getValue()
+        console.log('here')
 
         const formatted = formatContent(content)
         let findQueries = getAllExpandersQuery(formatted)
@@ -279,10 +281,25 @@ export default class TextExpander extends Plugin {
             hotkeys: []
         })
 
+        this.app.workspace.on('file-open', async (file) => {
+            if (!this.autoExpand) { return }
+
+            const activeLeaf = this.app.workspace.activeLeaf
+            if (!activeLeaf) { return }
+
+            const activeView = activeLeaf.view
+            const isAllowedView = activeView instanceof MarkdownView
+            if (!isAllowedView) { return }
+
+            this.initExpander(true)
+
+        })
+
         const data = await this.loadData()
         this.delay = data?.delay || 2000
         this.lineEnding = data?.lineEnding || '<--->'
         this.defaultTemplate = data?.defaultTemplate || '- $link'
+        this.autoExpand = data?.autoExpand || false
     }
 
     onunload() {
@@ -306,6 +323,17 @@ class SettingTab extends PluginSettingTab {
         containerEl.empty();
 
         containerEl.createEl('h2', {text: 'Settings for Text Expander'});
+
+        new Setting(containerEl)
+            .setName('Auto Expand')
+            .setDesc('Expand all queries in a file once you open it')
+            .addToggle(toggle => {
+                toggle
+                    .setValue(this.plugin.autoExpand)
+                    .onChange(value => {
+                        this.plugin.autoExpand = value
+                    })
+            })
 
         new Setting(containerEl)
             .setName('Delay')
