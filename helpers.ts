@@ -5,12 +5,6 @@ export interface ExpanderQuery {
     query: string
 }
 
-export interface FileHeader {
-    deep: number
-    line: number
-    name: string
-}
-
 export function formatContent(content: string): string[] {
     return content.split('\n')
 }
