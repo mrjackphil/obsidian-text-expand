@@ -26,6 +26,14 @@ interface PluginSettings {
     autoExpand: boolean
 }
 
+interface Sequences {
+    loop: boolean
+    name: string
+    format: (s: string, content: string, file: TFile) => string
+    desc: string
+    readContent?: boolean
+}
+
 export default class TextExpander extends Plugin {
     cm: CodeMirror.Editor
 
@@ -37,7 +45,7 @@ export default class TextExpander extends Plugin {
         lineEnding: '<--->'
     }
 
-    seqs = [
+    seqs: Sequences[] = [
         {name: '\\$filename', loop: true, format: (_s: string, _content: string, file: TFile) => file.basename, desc: 'name of the founded file'},
         {name: '\\$link', loop: true, format: (_s: string, _content: string, file: TFile) => this.app.fileManager.generateMarkdownLink(file, file.path), desc: 'link based on Obsidian settings'},
         {
