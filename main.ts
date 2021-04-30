@@ -244,7 +244,6 @@ export default class TextExpander extends Plugin {
         const cmDoc = this.cm = currentView.sourceMode.cmEditor
         const curNum = cmDoc.getCursor().line
         const content = cmDoc.getValue()
-        console.log('here')
 
         const formatted = formatContent(content)
         let findQueries = getAllExpandersQuery(formatted)
