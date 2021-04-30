@@ -71,10 +71,23 @@ export default class TextExpander extends Plugin {
     }
 
     seqs: Sequences[] = [
-        {name: '\\$filename', loop: true, format: (_s: string, _content: string, file: TFile) => file.basename, desc: 'name of the founded file'},
-        {name: '\\$link', loop: true, format: (_s: string, _content: string, file: TFile) => this.app.fileManager.generateMarkdownLink(file, file.path), desc: 'link based on Obsidian settings'},
         {
-            name: '\\$lines:\\d+', loop: true, readContent: true, format: (s: string, content: string, _file: TFile) => {
+            name: '\\$filename',
+            loop: true,
+            format: (_s: string, _content: string, file: TFile) => file.basename,
+            desc: 'name of the founded file'
+        },
+        {
+            name: '\\$link',
+            loop: true,
+            format: (_s: string, _content: string, file: TFile) => this.app.fileManager.generateMarkdownLink(file, file.path),
+            desc: 'link based on Obsidian settings'
+        },
+        {
+            name: '\\$lines:\\d+',
+            loop: true,
+            readContent: true,
+            format: (s: string, content: string, _file: TFile) => {
                 const digits = Number(s.split(':')[1])
 
                 return trimContent(content)
@@ -98,11 +111,36 @@ export default class TextExpander extends Plugin {
             format: (s: string, content: string, _file: TFile) => content.replace(new RegExp(this.config.lineEnding, 'g'), ''),
             desc: 'all content from the found file'
         },
-        {name: '\\$ext', loop: true, format: (s: string, content: string, file: TFile) => file.extension, desc: 'return file extension'},
-        {name: '\\$created', loop: true, format: (s: string, content: string, file: TFile) => String(file.stat.ctime), desc: 'created time'},
-        {name: '\\$size', loop: true, format: (s: string, content: string, file: TFile) => String(file.stat.size), desc: 'size of the file'},
-        {name: '\\$path', loop: true, format: (s: string, content: string, file: TFile) => file.path, desc: 'path to the found file'},
-        {name: '\\$parent', loop: true, format: (s: string, content: string, file: TFile) => file.parent.name, desc: 'parent folder name'},
+        {
+            name: '\\$ext',
+            loop: true,
+            format: (s: string, content: string, file: TFile) => file.extension,
+            desc: 'return file extension'
+        },
+        {
+            name: '\\$created',
+            loop: true,
+            format: (s: string, content: string, file: TFile) => String(file.stat.ctime),
+            desc: 'created time'
+        },
+        {
+            name: '\\$size',
+            loop: true,
+            format: (s: string, content: string, file: TFile) => String(file.stat.size),
+            desc: 'size of the file'
+        },
+        {
+            name: '\\$path',
+            loop: true,
+            format: (s: string, content: string, file: TFile) => file.path,
+            desc: 'path to the found file'
+        },
+        {
+            name: '\\$parent',
+            loop: true,
+            format: (s: string, content: string, file: TFile) => file.parent.name,
+            desc: 'parent folder name'
+        },
         {
             name: '^(.+|)\\$header:.+',
             loop: true,
@@ -150,7 +188,8 @@ export default class TextExpander extends Plugin {
             },
             desc: 'block ids from the found files. Can be prepended.'
         },
-        {name: '^(.+|)\\$match:header', loop: true, format: (s: string, content: string, file: TFile, results) => {
+        {
+            name: '^(.+|)\\$match:header', loop: true, format: (s: string, content: string, file: TFile, results) => {
                 const prefix = s.slice(0, s.indexOf('$'))
                 const metadata = this.app.metadataCache.getFileCache(file)
 
@@ -162,12 +201,15 @@ export default class TextExpander extends Plugin {
                     .map(h => this.app.fileManager.generateMarkdownLink(file, file.path, '#' + h.heading))
                     .map(link => prefix + link)
                     .join('\n') || ''
-            }, desc: 'extract found selections'},
-        {name: '^(.+|)\\$match', loop: true, format: (s: string, content: string, file: TFile, results) => {
+            }, desc: 'extract found selections'
+        },
+        {
+            name: '^(.+|)\\$match', loop: true, format: (s: string, content: string, file: TFile, results) => {
 
-            const prefix = s.slice(0, s.indexOf('$'))
-            return results.result.content?.map(t => results.content.slice(...t)).map(t => prefix + t).join('\n')
-            }, desc: 'extract found selections'},
+                const prefix = s.slice(0, s.indexOf('$'))
+                return results.result.content?.map(t => results.content.slice(...t)).map(t => prefix + t).join('\n')
+            }, desc: 'extract found selections'
+        },
     ]
 
     constructor(app: App, plugin: PluginManifest) {
@@ -328,7 +370,7 @@ export default class TextExpander extends Plugin {
 
         if (all) {
             findQueries.reduce((promise, query, i) =>
-                promise.then( () => {
+                promise.then(() => {
                     const newContent = formatContent(cmDoc.getValue())
                     const updatedQueries = getAllExpandersQuery(newContent)
 
@@ -358,14 +400,20 @@ export default class TextExpander extends Plugin {
         })
 
         this.app.workspace.on('file-open', async () => {
-            if (!this.config.autoExpand) { return }
+            if (!this.config.autoExpand) {
+                return
+            }
 
             const activeLeaf = this.app.workspace.activeLeaf
-            if (!activeLeaf) { return }
+            if (!activeLeaf) {
+                return
+            }
 
             const activeView = activeLeaf.view
             const isAllowedView = activeView instanceof MarkdownView
-            if (!isAllowedView) { return }
+            if (!isAllowedView) {
+                return
+            }
 
             this.initExpander(true)
 
@@ -473,7 +521,7 @@ class SettingTab extends PluginSettingTab {
                     const fragment = new DocumentFragment()
                     const div = fragment.createEl('div')
                     this.plugin.seqs
-                        .map(e => e.name + ' - ' + (e.desc || '') )
+                        .map(e => e.name + ' - ' + (e.desc || ''))
                         .map(e => {
                             const el = fragment.createEl('div')
                             el.setText(e)
@@ -484,7 +532,7 @@ class SettingTab extends PluginSettingTab {
                             `)
                             return el
                         }).forEach(el => {
-                            div.appendChild(el)
+                        div.appendChild(el)
                     })
                     fragment.appendChild(div)
 
