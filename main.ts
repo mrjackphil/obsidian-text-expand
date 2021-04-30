@@ -29,9 +29,34 @@ interface PluginSettings {
 interface Sequences {
     loop: boolean
     name: string
-    format: (s: string, content: string, file: TFile) => string
+    format: (s: string, content: string, file: TFile, results?: SearchDetails) => string
     desc: string
     readContent?: boolean
+    usingSearch?: boolean
+}
+
+type NumberTuple = [number, number]
+
+interface SearchDetails {
+    app: App
+    children: any[]
+    childrenEl: HTMLElement
+    collapseEl: HTMLElement
+    collapsed: boolean
+    collapsible: boolean
+    containerEl: HTMLElement
+    content: string
+    dom: any
+    el: HTMLElement
+    extraContext: () => boolean
+    file: TFile
+    info: any
+    onMatchRender: any
+    pusherEl: HTMLElement
+    result: {
+        filename?: NumberTuple[]
+        content?: NumberTuple[]
+    }
 }
 
 export default class TextExpander extends Plugin {
@@ -73,6 +98,11 @@ export default class TextExpander extends Plugin {
             format: (s: string, content: string, _file: TFile) => content.replace(new RegExp(this.config.lineEnding, 'g'), ''),
             desc: 'all content from the found file'
         },
+        {name: '\\$ext', loop: true, format: (s: string, content: string, file: TFile) => file.extension, desc: 'return file extension'},
+        {name: '\\$created', loop: true, format: (s: string, content: string, file: TFile) => String(file.stat.ctime), desc: 'created time'},
+        {name: '\\$size', loop: true, format: (s: string, content: string, file: TFile) => String(file.stat.size), desc: 'size of the file'},
+        {name: '\\$path', loop: true, format: (s: string, content: string, file: TFile) => file.path, desc: 'path to the found file'},
+        {name: '\\$parent', loop: true, format: (s: string, content: string, file: TFile) => file.parent.name, desc: 'parent folder name'},
         {
             name: '^(.+|)\\$header:.+',
             loop: true,
@@ -120,11 +150,11 @@ export default class TextExpander extends Plugin {
             },
             desc: 'block ids from the found files. Can be prepended.'
         },
-        {name: '\\$ext', loop: true, format: (s: string, content: string, file: TFile) => file.extension, desc: 'return file extension'},
-        {name: '\\$created', loop: true, format: (s: string, content: string, file: TFile) => String(file.stat.ctime), desc: 'created time'},
-        {name: '\\$size', loop: true, format: (s: string, content: string, file: TFile) => String(file.stat.size), desc: 'size of the file'},
-        {name: '\\$path', loop: true, format: (s: string, content: string, file: TFile) => file.path, desc: 'path to the found file'},
-        {name: '\\$parent', loop: true, format: (s: string, content: string, file: TFile) => file.parent.name, desc: 'parent folder name'},
+        {name: '^(.+|)\\$match', loop: true, format: (s: string, content: string, file: TFile, results) => {
+
+            const prefix = s.slice(0, s.indexOf('$'))
+            return results.result.content?.map(t => results.content.slice(...t)).map(t => prefix + t).join('\n')
+            }, desc: 'extract found selections'},
     ]
 
     constructor(app: App, plugin: PluginManifest) {
@@ -182,12 +212,16 @@ export default class TextExpander extends Plugin {
         }
     }
 
-    async getFoundAfterDelay() {
+    async getFoundAfterDelay(): Promise<Map<TFile, SearchDetails>> {
         const searchLeaf = this.app.workspace.getLeavesOfType('search')[0]
         const view = await searchLeaf.open(searchLeaf.view)
         return new Promise(resolve => {
-            // @ts-ignore
-            setTimeout(() => resolve(Array.from(view.dom.resultDomLookup.keys())), this.config.delay)
+            setTimeout(() => {
+                // @ts-ignore
+                const results = view.dom.resultDomLookup as Map<TFile, SearchDetails>
+
+                return resolve(results)
+            }, this.config.delay)
         })
     }
 
@@ -208,7 +242,8 @@ export default class TextExpander extends Plugin {
             currentFileName = currentView.file.basename
         }
 
-        const files = await this.getFoundAfterDelay() as TFile[]
+        const searchResults = await this.getFoundAfterDelay()
+        const files = Array.from(searchResults.keys())
 
         const filterFiles = this.config.excludeCurrent
             ? files.filter(file => file.basename !== currentFileName)
@@ -219,8 +254,12 @@ export default class TextExpander extends Plugin {
                 ? await this.app.vault.cachedRead(r)
                 : ''
 
+            const results = (new RegExp(this.seqs.filter(e => e.usingSearch).map(e => e.name).join('|')).test(template))
+                ? searchResults.get(r)
+                : undefined
+
             return this.seqs.reduce((acc, seq) =>
-                acc.replace(new RegExp(seq.name, 'g'), replace => seq.format(replace, fileContent, r)), template)
+                acc.replace(new RegExp(seq.name, 'g'), replace => seq.format(replace, fileContent, r, results)), template)
         }
 
         const changed = await Promise.all(
@@ -252,9 +291,15 @@ export default class TextExpander extends Plugin {
             new Notification('Expand query not found')
             return Promise.resolve()
         }
+        const lastLine = getLastLineToReplace(content, query, this.config.lineEnding)
+        this.cm.replaceRange(this.config.lineEnding,
+            {line: query.end + 1, ch: 0},
+            {line: lastLine, ch: this.cm.getLine(lastLine)?.length || 0})
+
+        const newContent = formatContent(this.cm.getValue())
 
         this.search(query.query)
-        return await this.startTemplateMode(query, getLastLineToReplace(content, query, this.config.lineEnding))
+        return await this.startTemplateMode(query, getLastLineToReplace(newContent, query, this.config.lineEnding))
     }
 
     initExpander(all = false) {
