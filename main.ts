@@ -22,6 +22,7 @@ interface PluginSettings {
     delay: number
     lineEnding: string
     defaultTemplate: string
+    excludeCurrent: boolean
     autoExpand: boolean
 }
 
@@ -29,12 +30,12 @@ export default class TextExpander extends Plugin {
     cm: CodeMirror.Editor
 
     config: PluginSettings = {
-        delay: 2000,
-        lineEnding: '<--->',
+        autoExpand: false,
         defaultTemplate: '- $link',
-        autoExpand: false
+        delay: 2000,
+        excludeCurrent: true,
+        lineEnding: '<--->'
     }
-
 
     seqs = [
         {name: '\\$filename', loop: true, format: (_s: string, _content: string, file: TFile) => file.basename, desc: 'name of the founded file'},
@@ -75,7 +76,7 @@ export default class TextExpander extends Plugin {
 
                 const metadata = this.app.metadataCache.getFileCache(file)
 
-                return metadata.headings.filter(e => {
+                return metadata.headings?.filter(e => {
                     const tests = [
                         [neededTitle, e.heading.includes(neededTitle)],
                         [neededLevel, e.level === neededLevel]
@@ -183,7 +184,6 @@ export default class TextExpander extends Plugin {
     }
 
     async startTemplateMode(query: ExpanderQuery, lastLine: number) {
-        const files = await this.getFoundAfterDelay() as TFile[]
         const currentView = this.app.workspace.activeLeaf.view
         let currentFileName = ''
 
@@ -200,9 +200,11 @@ export default class TextExpander extends Plugin {
             currentFileName = currentView.file.basename
         }
 
-        console.log(files)
+        const files = await this.getFoundAfterDelay() as TFile[]
 
-        const filesWithoutCurrent = files.filter(file => file.basename !== currentFileName)
+        const filterFiles = this.config.excludeCurrent
+            ? files.filter(file => file.basename !== currentFileName)
+            : files
 
         const format = async (r: TFile, template: string) => {
             const fileContent = (new RegExp(this.seqs.filter(e => e.readContent).map(e => e.name).join('|')).test(template))
@@ -214,7 +216,7 @@ export default class TextExpander extends Plugin {
         }
 
         const changed = await Promise.all(
-            filesWithoutCurrent
+            filterFiles
                 .map(async (file) => {
                     const result = await Promise.all(repeatableContent.map(async (s) => await format(file, s)))
                     return result.join('\n')
@@ -309,7 +311,10 @@ export default class TextExpander extends Plugin {
 
         const data = await this.loadData() as PluginSettings
         if (data) {
-            this.config = data
+            this.config = {
+                ...this.config,
+                ...data
+            }
         }
     }
 
@@ -382,6 +387,18 @@ class SettingTab extends PluginSettingTab {
                 text.setValue(this.plugin.config.defaultTemplate)
                     .onChange(val => {
                         this.plugin.config.defaultTemplate = val
+                        this.plugin.saveSettings()
+                    })
+            })
+
+        new Setting(containerEl)
+            .setName('Exclude current file')
+            .setDesc('You can specify should text expander exclude results from current file or not')
+            .addToggle(toggle => {
+                toggle
+                    .setValue(this.plugin.config.excludeCurrent)
+                    .onChange(value => {
+                        this.plugin.config.excludeCurrent = value
                         this.plugin.saveSettings()
                     })
             })
