@@ -16,13 +16,25 @@ import {
     MarkdownView,
     PluginManifest
 } from 'obsidian';
+import CodeMirror from 'codemirror'
+
+interface PluginSettings {
+    delay: number
+    lineEnding: string
+    defaultTemplate: string
+    autoExpand: boolean
+}
 
 export default class TextExpander extends Plugin {
-    delay = 2000;
     cm: CodeMirror.Editor
-    lineEnding = '<--->'
-    defaultTemplate = '- [[$filename]]'
-    autoExpand = false
+
+    config: PluginSettings = {
+        delay: 2000,
+        lineEnding: '<--->',
+        defaultTemplate: '- $link',
+        autoExpand: false
+    }
+
 
     seqs = [
         {name: '\\$filename', loop: true, format: (_s: string, _content: string, file: TFile) => file.basename, desc: 'name of the founded file'},
@@ -35,7 +47,7 @@ export default class TextExpander extends Plugin {
                     .split('\n')
                     .filter((_: string, i: number) => i < digits)
                     .join('\n')
-                    .replace(new RegExp(this.lineEnding, 'g'), '')
+                    .replace(new RegExp(this.config.lineEnding, 'g'), '')
             },
             desc: 'specified count of lines from the found file'
         },
@@ -49,13 +61,12 @@ export default class TextExpander extends Plugin {
             name: '\\$lines+',
             loop: true,
             readContent: true,
-            format: (s: string, content: string, _file: TFile) => content.replace(new RegExp(this.lineEnding, 'g'), ''),
+            format: (s: string, content: string, _file: TFile) => content.replace(new RegExp(this.config.lineEnding, 'g'), ''),
             desc: 'all content from the found file'
         },
         {
             name: '^(.+|)\\$header:.+',
             loop: true,
-            readContent: true,
             format: (s: string, content: string, file: TFile) => {
                 const prefix = s.slice(0, s.indexOf('$'))
                 const header = s.slice(s.indexOf('$')).replace('$header:', '').replace(/"/g, '')
@@ -167,7 +178,7 @@ export default class TextExpander extends Plugin {
         const view = await searchLeaf.open(searchLeaf.view)
         return new Promise(resolve => {
             // @ts-ignore
-            setTimeout(() => resolve(Array.from(view.dom.resultDomLookup.keys())), this.delay)
+            setTimeout(() => resolve(Array.from(view.dom.resultDomLookup.keys())), this.config.delay)
         })
     }
 
@@ -182,12 +193,14 @@ export default class TextExpander extends Plugin {
         const footer = templateContent.filter(e => e[0] === '>').map((s) => s.slice(1))
         const repeatableContent =
             templateContent.filter(e => e[0] !== '^' && e[0] !== '>').filter(e => e).length === 0
-                ? [this.defaultTemplate]
+                ? [this.config.defaultTemplate]
                 : templateContent.filter(e => e[0] !== '^' && e[0] !== '>').filter(e => e)
 
         if (currentView instanceof FileView) {
             currentFileName = currentView.file.basename
         }
+
+        console.log(files)
 
         const filesWithoutCurrent = files.filter(file => file.basename !== currentFileName)
 
@@ -214,7 +227,7 @@ export default class TextExpander extends Plugin {
             changed.join('\n'),
             footer.join('\n'),
             ' ',
-            this.lineEnding
+            this.config.lineEnding
         ].filter(e => e).join('\n')
 
         this.cm.replaceRange(result,
@@ -231,7 +244,7 @@ export default class TextExpander extends Plugin {
         }
 
         this.search(query.query)
-        return await this.startTemplateMode(query, getLastLineToReplace(content, query, this.lineEnding))
+        return await this.startTemplateMode(query, getLastLineToReplace(content, query, this.config.lineEnding))
     }
 
     initExpander(all = false) {
@@ -280,8 +293,8 @@ export default class TextExpander extends Plugin {
             hotkeys: []
         })
 
-        this.app.workspace.on('file-open', async (file) => {
-            if (!this.autoExpand) { return }
+        this.app.workspace.on('file-open', async () => {
+            if (!this.config.autoExpand) { return }
 
             const activeLeaf = this.app.workspace.activeLeaf
             if (!activeLeaf) { return }
@@ -294,15 +307,18 @@ export default class TextExpander extends Plugin {
 
         })
 
-        const data = await this.loadData()
-        this.delay = data?.delay || 2000
-        this.lineEnding = data?.lineEnding || '<--->'
-        this.defaultTemplate = data?.defaultTemplate || '- $link'
-        this.autoExpand = data?.autoExpand || false
+        const data = await this.loadData() as PluginSettings
+        if (data) {
+            this.config = data
+        }
     }
 
     onunload() {
         console.log('unloading plugin');
+    }
+
+    saveSettings() {
+        this.saveData(this.config)
     }
 }
 
@@ -328,9 +344,10 @@ class SettingTab extends PluginSettingTab {
             .setDesc('Expand all queries in a file once you open it')
             .addToggle(toggle => {
                 toggle
-                    .setValue(this.plugin.autoExpand)
+                    .setValue(this.plugin.config.autoExpand)
                     .onChange(value => {
-                        this.plugin.autoExpand = value
+                        this.plugin.config.autoExpand = value
+                        this.plugin.saveSettings()
                     })
             })
 
@@ -339,14 +356,10 @@ class SettingTab extends PluginSettingTab {
             .setDesc('Text expander don\' wait until search completed. It waits for a delay and paste result after that.')
             .addSlider(slider => {
                 slider.setLimits(1000, 10000, 1000)
-                slider.setValue(this.plugin.delay)
+                slider.setValue(this.plugin.config.delay)
                 slider.onChange(value => {
-                    this.plugin.delay = value
-                    this.plugin.saveData({
-                        delay: value,
-                        lineEnding: this.plugin.lineEnding,
-                        defaultTemplate: this.plugin.defaultTemplate
-                    })
+                    this.plugin.config.delay = value
+                    this.plugin.saveSettings()
                 })
                 slider.setDynamicTooltip()
             })
@@ -355,14 +368,10 @@ class SettingTab extends PluginSettingTab {
             .setName('Line ending')
             .setDesc('You can specify the text which will appear at the bottom of the generated text.')
             .addText(text => {
-                text.setValue(this.plugin.lineEnding)
+                text.setValue(this.plugin.config.lineEnding)
                     .onChange(val => {
-                        this.plugin.lineEnding = val
-                        this.plugin.saveData({
-                            delay: this.plugin.delay,
-                            lineEnding: val,
-                            defaultTemplate: this.plugin.defaultTemplate
-                        })
+                        this.plugin.config.lineEnding = val
+                        this.plugin.saveSettings()
                     })
             })
 
@@ -370,14 +379,10 @@ class SettingTab extends PluginSettingTab {
             .setName('Default template')
             .setDesc('You can specify default template')
             .addText(text => {
-                text.setValue(this.plugin.defaultTemplate)
+                text.setValue(this.plugin.config.defaultTemplate)
                     .onChange(val => {
-                        this.plugin.defaultTemplate = val
-                        this.plugin.saveData({
-                            delay: this.plugin.delay,
-                            lineEnding: this.plugin.lineEnding,
-                            defaultTemplate: val
-                        })
+                        this.plugin.config.defaultTemplate = val
+                        this.plugin.saveSettings()
                     })
             })
 
