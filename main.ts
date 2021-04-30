@@ -65,7 +65,7 @@ export default class TextExpander extends Plugin {
     config: PluginSettings = {
         autoExpand: false,
         defaultTemplate: '- $link',
-        delay: 2000,
+        delay: 5000,
         excludeCurrent: true,
         lineEnding: '<--->'
     }
@@ -150,6 +150,19 @@ export default class TextExpander extends Plugin {
             },
             desc: 'block ids from the found files. Can be prepended.'
         },
+        {name: '^(.+|)\\$match:header', loop: true, format: (s: string, content: string, file: TFile, results) => {
+                const prefix = s.slice(0, s.indexOf('$'))
+                const metadata = this.app.metadataCache.getFileCache(file)
+
+                const headings = metadata.headings
+                    ?.filter(h => results.result.content.filter(c => h.position.end.offset < c[0]).some(e => e))
+                    .slice(-1)
+
+                return headings
+                    .map(h => this.app.fileManager.generateMarkdownLink(file, file.path, '#' + h.heading))
+                    .map(link => prefix + link)
+                    .join('\n') || ''
+            }, desc: 'extract found selections'},
         {name: '^(.+|)\\$match', loop: true, format: (s: string, content: string, file: TFile, results) => {
 
             const prefix = s.slice(0, s.indexOf('$'))
@@ -254,12 +267,8 @@ export default class TextExpander extends Plugin {
                 ? await this.app.vault.cachedRead(r)
                 : ''
 
-            const results = (new RegExp(this.seqs.filter(e => e.usingSearch).map(e => e.name).join('|')).test(template))
-                ? searchResults.get(r)
-                : undefined
-
             return this.seqs.reduce((acc, seq) =>
-                acc.replace(new RegExp(seq.name, 'g'), replace => seq.format(replace, fileContent, r, results)), template)
+                acc.replace(new RegExp(seq.name, 'g'), replace => seq.format(replace, fileContent, r, searchResults.get(r))), template)
         }
 
         const changed = await Promise.all(
@@ -458,15 +467,26 @@ class SettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName('Sequences')
+            .setDesc('REGEXP - DESCRIPTION')
             .setDesc(
                 (() => {
                     const fragment = new DocumentFragment()
-                    const pre = fragment.createEl('pre')
-                    pre.innerText = this.plugin.seqs
-                        .map(e =>
-                            e.name.replace('\\', '') + ': ' + (e.desc || '')
-                        ).join('\n')
-                    fragment.appendChild(pre)
+                    const div = fragment.createEl('div')
+                    this.plugin.seqs
+                        .map(e => e.name + ' - ' + (e.desc || '') )
+                        .map(e => {
+                            const el = fragment.createEl('div')
+                            el.setText(e)
+                            el.setAttribute('style', `
+                                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                                margin-bottom: 0.5rem;
+                                padding-bottom: 0.5rem;
+                            `)
+                            return el
+                        }).forEach(el => {
+                            div.appendChild(el)
+                    })
+                    fragment.appendChild(div)
 
                     return fragment
                 })()
