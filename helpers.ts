@@ -11,20 +11,6 @@ export interface FileHeader {
     name: string
 }
 
-export function getHeadersFromContent(content: string): FileHeader[] {
-    return content.split('\n').map((e, i) => [e, i] as [string, number])
-        .filter(([s, i]) => s.match(/^#+\s/)).map(([e, i]) => {
-            const deep = e.split('#').length - 1
-            const line = i
-
-            return {
-                deep,
-                line,
-                name: e.replace(/^#+/g, '').trim()
-            }
-        })
-}
-
 export function formatContent(content: string): string[] {
     return content.split('\n')
 }
