@@ -99,7 +99,7 @@ export default class TextExpander extends Plugin {
             desc: 'specified count of lines from the found file'
         },
         {
-            name: '\\$frontmatter:[a-zA-Z0-9_-]+',
+            name: '\\$frontmatter:[\\p\{L\}_-]+',
             loop: true,
             format: (s: string, _content: string, file: TFile) => this.getFrontMatter(s, file),
             desc: 'value from the frontmatter key in the found file'
@@ -310,7 +310,7 @@ export default class TextExpander extends Plugin {
                 : ''
 
             return this.seqs.reduce((acc, seq) =>
-                acc.replace(new RegExp(seq.name, 'g'), replace => seq.format(replace, fileContent, r, searchResults.get(r))), template)
+                acc.replace(new RegExp(seq.name, 'gu'), replace => seq.format(replace, fileContent, r, searchResults.get(r))), template)
         }
 
         const changed = await Promise.all(
