@@ -330,6 +330,15 @@ export default class TextExpander extends Plugin {
             this.config.lineEnding
         ].filter(e => e).join('\n')
 
+        const viewBeforeReplace = this.app.workspace.activeLeaf.view
+        if (viewBeforeReplace instanceof MarkdownView) {
+            if (viewBeforeReplace.file.basename !== currentFileName) {
+                return
+            }
+        } else {
+            return
+        }
+
         this.cm.replaceRange(result,
             {line: query.end + 1, ch: 0},
             {line: lastLine, ch: this.cm.getLine(lastLine)?.length || 0})
