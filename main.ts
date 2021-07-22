@@ -29,7 +29,7 @@ interface PluginSettings {
 interface Sequences {
     loop: boolean
     name: string
-    format: (s: string, content: string, file: TFile, results?: SearchDetails) => string
+    format: (s: string, content: string, file: TFile, results?: SearchDetails, index?: number) => string
     desc: string
     readContent?: boolean
     usingSearch?: boolean
@@ -71,6 +71,12 @@ export default class TextExpander extends Plugin {
     }
 
     seqs: Sequences[] = [
+        {
+            name: '\\$count',
+            loop: true,
+            format: (_s: string, _content: string, _file: TFile, _d, index) => index ? String(index + 1) : String(1),
+            desc: 'add index number to each produced file'
+        },
         {
             name: '\\$filename',
             loop: true,
@@ -322,19 +328,19 @@ export default class TextExpander extends Plugin {
             ? files.filter(file => file.basename !== currentFileName)
             : files
 
-        const format = async (r: TFile, template: string) => {
+        const format = async (r: TFile, template: string, index: number) => {
             const fileContent = (new RegExp(this.seqs.filter(e => e.readContent).map(e => e.name).join('|')).test(template))
                 ? await this.app.vault.cachedRead(r)
                 : ''
 
             return this.seqs.reduce((acc, seq) =>
-                acc.replace(new RegExp(seq.name, 'gu'), replace => seq.format(replace, fileContent, r, searchResults.get(r))), template)
+                acc.replace(new RegExp(seq.name, 'gu'), replace => seq.format(replace, fileContent, r, searchResults.get(r), index)), template)
         }
 
         const changed = await Promise.all(
             filterFiles
-                .map(async (file) => {
-                    const result = await Promise.all(repeatableContent.map(async (s) => await format(file, s)))
+                .map(async (file, i) => {
+                    const result = await Promise.all(repeatableContent.map(async (s) => await format(file, s, i)))
                     return result.join('\n')
                 })
         )
