@@ -118,6 +118,24 @@ export default class TextExpander extends Plugin {
             desc: 'return file extension'
         },
         {
+            name: '\\$created:format:date',
+            loop: true,
+            format: (s: string, content: string, file: TFile) => String(new Date(file.stat.ctime).toISOString()).split('T')[0],
+            desc: 'created time formatted'
+        },
+        {
+            name: '\\$created:format:time',
+            loop: true,
+            format: (s: string, content: string, file: TFile) => String(new Date(file.stat.ctime).toISOString()).split(/([.T])/)[2],
+            desc: 'created time formatted'
+        },
+        {
+            name: '\\$created:format',
+            loop: true,
+            format: (s: string, content: string, file: TFile) => String(new Date(file.stat.ctime).toISOString()),
+            desc: 'created time formatted'
+        },
+        {
             name: '\\$created',
             loop: true,
             format: (s: string, content: string, file: TFile) => String(file.stat.ctime),
