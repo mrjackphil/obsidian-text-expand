@@ -275,7 +275,7 @@ export default class TextExpander extends Plugin {
             // @ts-ignore
             collapsed: this.app.workspace.leftSplit.collapsed,
             // @ts-ignore
-            tab: this.app.workspace.leftSplit.children[0].currentTab
+            tab: this.getSearchTabIndex()
         }
 
         search(s)
@@ -290,6 +290,17 @@ export default class TextExpander extends Plugin {
             this.app.workspace.leftSplit.children[0].selectTabIndex(leftSplitState.tab)
         }
     }
+
+    getSearchTabIndex(): number {
+        let leftTabs = this.app.workspace.leftSplit.children[0].children;
+        let searchTabId: string;
+        this.app.workspace.iterateAllLeaves((leaf: any) => {
+            if (leaf.getViewState().type == "search") { searchTabId = leaf.id; }
+        });
+        return leftTabs.findIndex((item: any, index: number, array: any[]) => {
+            if (item.id == searchTabId) { return true; }
+        });
+    };
 
     async getFoundAfterDelay(): Promise<Map<TFile, SearchDetails>> {
         const searchLeaf = this.app.workspace.getLeavesOfType('search')[0]
