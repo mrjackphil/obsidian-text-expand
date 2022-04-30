@@ -514,7 +514,7 @@ class SettingTab extends PluginSettingTab {
             .setName('Delay')
             .setDesc('Text expander don\' wait until search completed. It waits for a delay and paste result after that.')
             .addSlider(slider => {
-                slider.setLimits(1000, 10000, 1000)
+                slider.setLimits(100, 10000, 100)
                 slider.setValue(this.plugin.config.delay)
                 slider.onChange(value => {
                     this.plugin.config.delay = value
