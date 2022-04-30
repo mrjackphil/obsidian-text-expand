@@ -228,6 +228,64 @@ export default class TextExpander extends Plugin {
             }, desc: 'extract found selections'
         },
         {
+            name: '^(.+|)\\$matchline', loop: true, format: (s: string, content: string, file: TFile, results) => {
+
+                interface LineInfo {
+                    text: string
+                    num: number
+                    start: number
+                    end: number
+                }
+
+                const prefix = s.slice(0, s.indexOf('$'));
+
+                const lines = results.content.split('\n');
+
+                // Grab info about line content, index, text length and start/end character position
+                const lineInfos: Array<LineInfo> = []
+                for (let i = 0; i < lines.length; i++) {
+                    const text = lines[i]
+
+                    if (i === 0) {
+                        lineInfos.push({
+                            num: 0,
+                            start: 0,
+                            end: text.length,
+                            text
+                        })
+
+                        continue
+                    }
+
+                    const start = lineInfos[i-1].end + 1
+                    lineInfos.push({
+                        num: i,
+                        start,
+                        text,
+                        end: text.length + start
+                    })
+                }
+
+                function highlight(lineStart: number, lineEnd: number, matchStart: number, matchEnd: number, lineContent: string) {
+                    return [
+                        ...lineContent.slice(0, matchStart - lineStart),
+                        '==',
+                        ...lineContent.slice(matchStart - lineStart, (matchStart - lineStart) + (matchEnd - matchStart)),
+                        '==',
+                        ...lineContent.slice((matchStart - lineStart) + (matchEnd - matchStart)),
+                    ].join('')
+                }
+
+                return results.result.content.map(([from, to]) => {
+                    return lineInfos
+                        .filter(({ start, end }) => start < from && end > to)
+                        .map(({start, end, text}) => {
+                            return highlight(start, end, from, to, text)
+                        }).join('\n')
+                }).join('\n')
+            }, desc: 'extract line with matches'
+        },
+        {
             name: '^(.+|)\\$match', loop: true, format: (s: string, content: string, file: TFile, results) => {
 
                 if (!results.result.content) {
