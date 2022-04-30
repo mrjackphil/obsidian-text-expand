@@ -65,9 +65,9 @@ export default class TextExpander extends Plugin {
     config: PluginSettings = {
         autoExpand: false,
         defaultTemplate: '- $link',
-        delay: 5000,
+        delay: 300,
         excludeCurrent: true,
-        lineEnding: '<--->'
+        lineEnding: '<-->'
     }
 
     seqs: Sequences[] = [
