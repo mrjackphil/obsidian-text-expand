@@ -202,11 +202,11 @@ const sequences: Sequences[] = [
         }, desc: 'extract found selections'
     },
     {
-        name: '^(.+|)\\$matchline:(\\+|-|)\\d+',
+        name: '^(.+|)\\$matchline(:(\\+|-|)\\d+|)',
         loop: true,
         format: (_p, s: string, content: string, file: TFile, results) => {
             const prefix = s.slice(0, s.indexOf('$matchline'));
-            const value = s.slice(s.indexOf('$matchline')).split(':')[1];
+            const value = s.slice(s.indexOf('$matchline')).split(':')[1] || '';
             const isPlus = value.contains('+');
             const isMinus = value.contains('-');
             const isContext = !isPlus && !isMinus;
@@ -262,47 +262,6 @@ const sequences: Sequences[] = [
                 }
 
                 return resultLines.map(e => e.text).join('\n')
-            }).join('\n')
-        }, desc: 'extract line with matches'
-    },
-    {
-        name: '^(.+|)\\$matchline', loop: true, format: (_p, s: string, content: string, file: TFile, results) => {
-
-            const prefix = s.slice(0, s.indexOf('$'));
-
-            const lines = results.content.split('\n');
-
-            // Grab info about line content, index, text length and start/end character position
-            const lineInfos: Array<LineInfo> = []
-            for (let i = 0; i < lines.length; i++) {
-                const text = lines[i]
-
-                if (i === 0) {
-                    lineInfos.push({
-                        num: 0,
-                        start: 0,
-                        end: text.length,
-                        text
-                    })
-
-                    continue
-                }
-
-                const start = lineInfos[i-1].end + 1
-                lineInfos.push({
-                    num: i,
-                    start,
-                    text,
-                    end: text.length + start
-                })
-            }
-
-            return results.result.content.map(([from, to]) => {
-                return lineInfos
-                    .filter(({ start, end }) => start <= from && end >= to)
-                    .map(({start, end, text}) => {
-                        return highlight(start, end, from, to, text)
-                    }).join('\n')
             }).join('\n')
         }, desc: 'extract line with matches'
     },
