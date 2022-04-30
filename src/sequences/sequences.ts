@@ -1,6 +1,7 @@
 import {TFile} from "obsidian";
 import {trimContent} from "../../helpers";
 import TextExpander, {SearchDetails} from "../main";
+import {off} from "codemirror";
 
 export interface Sequences {
     loop: boolean
@@ -9,6 +10,23 @@ export interface Sequences {
     desc: string
     readContent?: boolean
     usingSearch?: boolean
+}
+
+interface LineInfo {
+    text: string
+    num: number
+    start: number
+    end: number
+}
+
+function highlight(lineStart: number, lineEnd: number, matchStart: number, matchEnd: number, lineContent: string) {
+    return [
+        ...lineContent.slice(0, matchStart - lineStart),
+        '==',
+        ...lineContent.slice(matchStart - lineStart, (matchStart - lineStart) + (matchEnd - matchStart)),
+        '==',
+        ...lineContent.slice((matchStart - lineStart) + (matchEnd - matchStart)),
+    ].join('')
 }
 
 const sequences: Sequences[] = [
@@ -169,16 +187,15 @@ const sequences: Sequences[] = [
         }, desc: 'extract found selections'
     },
     {
-        name: '^(.+|)\\$matchline', loop: true, format: (_p, s: string, content: string, file: TFile, results) => {
-
-            interface LineInfo {
-                text: string
-                num: number
-                start: number
-                end: number
-            }
-
-            const prefix = s.slice(0, s.indexOf('$'));
+        name: '^(.+|)\\$matchline:(\\+|-|)\\d+',
+        loop: true,
+        format: (_p, s: string, content: string, file: TFile, results) => {
+            const prefix = s.slice(0, s.indexOf('$matchline'));
+            const value = s.slice(s.indexOf('$matchline')).split(':')[1];
+            const isPlus = value.contains('+');
+            const isMinus = value.contains('-');
+            const isContext = !isPlus && !isMinus;
+            const offset = Number(value.replace(/[+-]/, ''));
 
             const lines = results.content.split('\n');
 
@@ -207,14 +224,62 @@ const sequences: Sequences[] = [
                 })
             }
 
-            function highlight(lineStart: number, lineEnd: number, matchStart: number, matchEnd: number, lineContent: string) {
-                return [
-                    ...lineContent.slice(0, matchStart - lineStart),
-                    '==',
-                    ...lineContent.slice(matchStart - lineStart, (matchStart - lineStart) + (matchEnd - matchStart)),
-                    '==',
-                    ...lineContent.slice((matchStart - lineStart) + (matchEnd - matchStart)),
-                ].join('')
+            return results.result.content.map(([from, to]) => {
+                const matchedLines = lineInfos
+                    .filter(({ start, end }) => start < from && end > to)
+                    .map((line) => {
+                        return {
+                            ...line,
+                            text: highlight(line.start, line.end, from, to, line.text)
+                        }
+                    })
+
+                const resultLines: LineInfo[] = []
+                for (const matchedLine of matchedLines) {
+                    const prevLines = isMinus || isContext
+                                ? lineInfos.filter(l => matchedLine.num - l.num > 0 && matchedLine.num - l.num < offset)
+                                : []
+                    const nextLines = isPlus || isContext
+                                ? lineInfos.filter(l => l.num - matchedLine.num > 0 && l.num - matchedLine.num < offset)
+                                : []
+
+                    resultLines.push( ...prevLines, matchedLine, ...nextLines )
+                }
+
+                return resultLines.map(e => e.text).join('\n')
+            }).join('\n')
+        }, desc: 'extract line with matches'
+    },
+    {
+        name: '^(.+|)\\$matchline', loop: true, format: (_p, s: string, content: string, file: TFile, results) => {
+
+            const prefix = s.slice(0, s.indexOf('$'));
+
+            const lines = results.content.split('\n');
+
+            // Grab info about line content, index, text length and start/end character position
+            const lineInfos: Array<LineInfo> = []
+            for (let i = 0; i < lines.length; i++) {
+                const text = lines[i]
+
+                if (i === 0) {
+                    lineInfos.push({
+                        num: 0,
+                        start: 0,
+                        end: text.length,
+                        text
+                    })
+
+                    continue
+                }
+
+                const start = lineInfos[i-1].end + 1
+                lineInfos.push({
+                    num: i,
+                    start,
+                    text,
+                    end: text.length + start
+                })
             }
 
             return results.result.content.map(([from, to]) => {
