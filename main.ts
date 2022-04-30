@@ -230,8 +230,20 @@ export default class TextExpander extends Plugin {
         {
             name: '^(.+|)\\$match', loop: true, format: (s: string, content: string, file: TFile, results) => {
 
-                const prefix = s.slice(0, s.indexOf('$'))
-                return results.result.content?.map(t => results.content.slice(...t)).map(t => prefix + t).join('\n')
+                if (!results.result.content) {
+                    console.warn('There is no content in results')
+                    return ''
+                }
+
+                function appendPrefix(prefix: string, line: string) {
+                    return prefix + line;
+                }
+
+                const prefixContent = s.slice(0, s.indexOf('$'))
+                return results.result.content
+                    .map(([from, to]) => results.content.slice(from, to))
+                    .map(line => appendPrefix(prefixContent, line))
+                    .join('\n')
             }, desc: 'extract found selections'
         },
     ]
