@@ -64,6 +64,21 @@ const sequences: Sequences[] = [
         desc: 'specified count of lines from the found file'
     },
     {
+        name: '\\$characters:\\d+',
+        loop: true,
+        readContent: true,
+        format: (p, s: string, content: string, _file: TFile) => {
+            const digits = Number(s.split(':')[1])
+
+            return trimContent(content)
+                .split('')
+                .filter((_: string, i: number) => i < digits)
+                .join('')
+                .replace(new RegExp(p.config.lineEnding, 'g'), '')
+        },
+        desc: 'specified count of lines from the found file'
+    },
+    {
         name: '\\$frontmatter:[\\p\{L\}_-]+',
         loop: true,
         format: (p, s: string, _content: string, file: TFile) => p.getFrontMatter(s, file),
