@@ -241,7 +241,7 @@ const sequences: Sequences[] = [
 
             return results.result.content.map(([from, to]) => {
                 const matchedLines = lineInfos
-                    .filter(({ start, end }) => start < from && end > to)
+                    .filter(({ start, end }) => start <= from && end >= to)
                     .map((line) => {
                         return {
                             ...line,
@@ -299,7 +299,7 @@ const sequences: Sequences[] = [
 
             return results.result.content.map(([from, to]) => {
                 return lineInfos
-                    .filter(({ start, end }) => start < from && end > to)
+                    .filter(({ start, end }) => start <= from && end >= to)
                     .map(({start, end, text}) => {
                         return highlight(start, end, from, to, text)
                     }).join('\n')
