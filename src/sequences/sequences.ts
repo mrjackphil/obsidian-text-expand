@@ -174,11 +174,13 @@ const sequences: Sequences[] = [
         readContent: true,
         loop: true,
         format: (p, s: string, content: string, file: TFile) => {
+            const prefix = s.slice(0, s.indexOf('$'))
+
             return content
                 .split('\n')
                 .filter(e => /\^\w+$/.test(e))
                 .map(e =>
-                    p.app.fileManager.generateMarkdownLink(file, file.basename, '#' + e.replace(/^.+?(\^\w+$)/, '$1'))
+                    prefix + p.app.fileManager.generateMarkdownLink(file, file.basename, '#' + e.replace(/^.+?(\^\w+$)/, '$1'))
                 )
                 .join('\n')
         },
