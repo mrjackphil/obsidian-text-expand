@@ -1,7 +1,7 @@
 {
   "id": "mrj-text-expand",
   "name": "Text expand",
-  "version": "0.10.2",
+  "version": "0.10.3",
   "description": "Search and paste/transclude links to located files.",
   "isDesktopOnly": false,
   "author": "MrJackphil",
