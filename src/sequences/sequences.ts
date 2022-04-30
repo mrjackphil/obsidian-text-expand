@@ -173,15 +173,13 @@ const sequences: Sequences[] = [
         name: '^(.+|)\\$blocks',
         readContent: true,
         loop: true,
-        format: (_p, s: string, content: string, file: TFile) => {
+        format: (p, s: string, content: string, file: TFile) => {
             return content
                 .split('\n')
                 .filter(e => /\^\w+$/.test(e))
-                .map(e => s
-                    .replace(
-                        '$blocks',
-                        `(${encodeURIComponent(file.basename)}#${e.replace(/^.+?(\^\w+$)/, '$1')})`
-                    ))
+                .map(e =>
+                    p.app.fileManager.generateMarkdownLink(file, file.basename, '#' + e.replace(/^.+?(\^\w+$)/, '$1'))
+                )
                 .join('\n')
         },
         desc: 'block ids from the found files. Can be prepended.'
