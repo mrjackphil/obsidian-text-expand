@@ -382,12 +382,15 @@ export default class TextExpander extends Plugin {
     }
 
     async runQuery(query: ExpanderQuery, content: string[]) {
+        const { lineEnding } = this.config
+
         if (!query) {
             new Notification('Expand query not found')
             return Promise.resolve()
         }
+
         const lastLine = getLastLineToReplace(content, query, this.config.lineEnding)
-        this.cm.replaceRange(this.config.lineEnding,
+        this.cm.replaceRange('\n' + lineEnding,
             {line: query.end + 1, ch: 0},
             {line: lastLine, ch: this.cm.getLine(lastLine)?.length || 0})
 
