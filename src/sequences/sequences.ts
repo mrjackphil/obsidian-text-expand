@@ -268,6 +268,17 @@ const sequences: Sequences[] = [
         }, desc: 'extract line with matches'
     },
     {
+        name: '^(.+|)\\$searchresult',
+        loop: true,
+        desc: '',
+        format: (_p, s: string, content: string, file: TFile, results) => {
+            const prefix = s.slice(0, s.indexOf('$searchresult'));
+            return results.children.map(matchedFile => {
+                return prefix + matchedFile.el.innerText
+            }).join('\n')
+        }
+    },
+    {
         name: '^(.+|)\\$match', loop: true, format: (_p, s: string, content: string, file: TFile, results) => {
 
             if (!results.result.content) {
