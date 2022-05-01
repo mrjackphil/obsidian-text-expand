@@ -261,7 +261,7 @@ const sequences: Sequences[] = [
                     resultLines.push( ...prevLines, matchedLine, ...nextLines )
                 }
 
-                return resultLines.map(e => e.text).join('\n')
+                return prefix + resultLines.map(e => e.text).join('\n')
             }).join('\n')
         }, desc: 'extract line with matches'
     },
