@@ -202,11 +202,13 @@ const sequences: Sequences[] = [
         }, desc: 'extract found selections'
     },
     {
-        name: '^(.+|)\\$matchline(:(\\+|-|)\\d+|)',
+        name: '^(.+|)\\$matchline(:(\\+|-|)\\d+:\\d+|:(\\+|-|)\\d+|)',
         loop: true,
         format: (_p, s: string, content: string, file: TFile, results) => {
             const prefix = s.slice(0, s.indexOf('$matchline'));
-            const value = s.slice(s.indexOf('$matchline')).split(':')[1] || '';
+            const [keyword, context, limit] = s.slice(s.indexOf('$matchline')).split(':')
+            const value = context || '';
+            const limitValue = Number(limit)
             const isPlus = value.contains('+');
             const isMinus = value.contains('-');
             const isContext = !isPlus && !isMinus;
@@ -262,7 +264,7 @@ const sequences: Sequences[] = [
                 }
 
                 return prefix + resultLines.map(e => e.text).join('\n')
-            }).join('\n')
+            }).map(line => limitValue ? line.slice(0, limitValue) : line).join('\n')
         }, desc: 'extract line with matches'
     },
     {
