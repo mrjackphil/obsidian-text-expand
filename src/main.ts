@@ -24,6 +24,10 @@ interface PluginSettings {
     defaultTemplate: string
     excludeCurrent: boolean
     autoExpand: boolean
+    prefixes: {
+        header: string
+        footer: string
+    }
 }
 
 type NumberTuple = [number, number]
@@ -58,7 +62,11 @@ export default class TextExpander extends Plugin {
         defaultTemplate: '- $link',
         delay: 300,
         excludeCurrent: true,
-        lineEnding: '<-->'
+        lineEnding: '<-->',
+        prefixes: {
+            header: '^',
+            footer: '>'
+        }
     }
 
     seqs: Sequences[] = sequences
@@ -142,18 +150,22 @@ export default class TextExpander extends Plugin {
         })
     }
 
-    async startTemplateMode(query: ExpanderQuery, lastLine: number) {
+    async startTemplateMode(query: ExpanderQuery, lastLine: number, prefixes: PluginSettings["prefixes"]) {
         const currentView = this.app.workspace.activeLeaf.view
         let currentFileName = ''
 
         const templateContent = query.template.split('\n')
 
-        const heading = templateContent.filter(e => e[0] === '^').map((s) => s.slice(1))
-        const footer = templateContent.filter(e => e[0] === '>').map((s) => s.slice(1))
+        const isHeader = (line: string) => line.startsWith(prefixes.header)
+        const isFooter = (line: string) => line.startsWith(prefixes.footer)
+        const isRepeat = (line: string) => !isHeader(line) && !isFooter(line)
+
+        const heading = templateContent.filter(isHeader).map((s) => s.slice(1))
+        const footer = templateContent.filter(isFooter).map((s) => s.slice(1))
         const repeatableContent =
-            templateContent.filter(e => e[0] !== '^' && e[0] !== '>').filter(e => e).length === 0
+            templateContent.filter(isRepeat).filter(e => e).length === 0
                 ? [this.config.defaultTemplate]
-                : templateContent.filter(e => e[0] !== '^' && e[0] !== '>').filter(e => e)
+                : templateContent.filter(isRepeat).filter(e => e)
 
         if (currentView instanceof FileView) {
             currentFileName = currentView.file.basename
@@ -209,7 +221,7 @@ export default class TextExpander extends Plugin {
     }
 
     async runQuery(query: ExpanderQuery, content: string[]) {
-        const { lineEnding } = this.config
+        const { lineEnding, prefixes } = this.config
 
         if (!query) {
             new Notification('Expand query not found')
@@ -224,7 +236,7 @@ export default class TextExpander extends Plugin {
         const newContent = formatContent(this.cm.getValue())
 
         this.search(query.query)
-        return await this.startTemplateMode(query, getLastLineToReplace(newContent, query, this.config.lineEnding))
+        return await this.startTemplateMode(query, getLastLineToReplace(newContent, query, this.config.lineEnding), prefixes)
     }
 
     initExpander(all = false) {
@@ -383,6 +395,32 @@ class SettingTab extends PluginSettingTab {
                     .setValue(this.plugin.config.excludeCurrent)
                     .onChange(value => {
                         this.plugin.config.excludeCurrent = value
+                        this.plugin.saveSettings()
+                    })
+            })
+
+        new Setting(containerEl)
+            .setHeading()
+            .setName('Prefixes')
+
+        new Setting(containerEl)
+            .setName('Header')
+            .setDesc('Line prefixed by this symbol will be recognized as header')
+            .addText(text => {
+                text.setValue(this.plugin.config.prefixes.header)
+                    .onChange(val => {
+                        this.plugin.config.prefixes.header = val
+                        this.plugin.saveSettings()
+                    })
+            })
+
+        new Setting(containerEl)
+            .setName('Footer')
+            .setDesc('Line prefixed by this symbol will be recognized as footer')
+            .addText(text => {
+                text.setValue(this.plugin.config.prefixes.footer)
+                    .onChange(val => {
+                        this.plugin.config.prefixes.footer = val
                         this.plugin.saveSettings()
                     })
             })
