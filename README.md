@@ -1,13 +1,13 @@
 # Text expand
 
-> Hey, if you like this plugin, you can support me using [Patreon](https://patreon.com/mrjackphil), [Paypal](https://www.paypal.com/paypalme/mrjackphil) or [Buy me a cofee](https://www.buymeacoffee.com/mrjackphil). 
-> Or you can just share how plugin improves your note-taking experience. 
+> Hey, if you like this plugin, you can support me using [Patreon](https://patreon.com/mrjackphil), [Paypal](https://www.paypal.com/paypalme/mrjackphil) or [Buy me a cofee](https://www.buymeacoffee.com/mrjackphil).
+> Or you can just share how plugin improves your note-taking experience.
 > Or just send me a message :)
 
 ![](./screenshots/1.gif)
 
-This plugin will search files using [Obsidian search functionality](https://publish.obsidian.md/help/Plugins/Search) 
-and then paste result. The output can be customized using [template feature](#template-feature).
+This plugin will search files using [Obsidian search functionality](https://publish.obsidian.md/help/Plugins/Search)
+and then paste the result. The output can be customized using [template feature](#template-feature).
 
 ## Install
 - Just use built-in plugin manager and find `Text expand` plugin
@@ -68,20 +68,27 @@ Syntax looks like that:
 
 #### Special sequences
 - `$filename` - return a basename of a file
+- `$link`- return wikilink
+- `$searchresult` - return the context displayed in the Obsidian search, depending on the amount of context that is selected in the search window
+- `$matchline` - return the line which contains the search query
+- `$matchline:2` - return the line which contains the search query and 2 lines after and before matched line
+- `$matchline:+2` - return the line which contains the search query and 2 lines after matched line
+- `$matchline:0:10` - return the line which contains the search query and limit line by 10 characters
 - `$lines` - return the full content of the file
 - `$lines:10` - return 10 lines from the file. 10 could be replaced on any number
 - `$ext` - return extension of the file
 - `$created`
 - `$size`
 - `$parent` - return parent folder
-- `$path` - return path to file 
+- `$path` - return path to file
 - `$frontmatter:NAME` - return frontmatter value from field `NAME`
-- $header:## - extract content of all `##` headers in a file
-- $header:### HEADER - extract content of the HEADER, ex. `$header:##Ideas` or `$header:"## Plugins for Obsidian"`
-- $blocks - extract all blocks paths from the note
+- `$header:##` - extract all headers as links
+- `$header:###HEADER` - extract headers as links, ex. `$header:##Ideas` or `$header:"## Plugins for Obsidian"`
+- `$blocks` - extract all blocks paths from the note as links
 
 ## Settings
-- Delay (default: `2000ms`) - the plugin don't wait until search completed. It waits for a delay and paste result after that.
-- Line ending (default: `<--->`) - how will looks like the line below the expanded content
+- Delay (default: `100ms`) - the plugin don't wait until search completed. It waits for a delay and paste result after that.
+- Line ending (default: `<-->`) - how will looks like the line below the expanded content
 - Default template (default: `- [[$filename]]`) - how will look the expanded content when no template provided
+- Prefixes - which prefix to use to recognize header/footer in template section
 
