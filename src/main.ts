@@ -4,7 +4,7 @@ import {
     getAllExpandersQuery,
     getClosestQuery,
     getLastLineToReplace
-} from 'helpers';
+} from 'src/helpers/helpers';
 import {
     App,
     Plugin,

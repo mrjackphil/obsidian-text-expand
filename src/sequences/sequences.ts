@@ -1,5 +1,5 @@
 import {TFile} from "obsidian";
-import {trimContent} from "../../helpers";
+import {trimContent} from "../helpers/helpers";
 import TextExpander, {SearchDetails} from "../main";
 import {off} from "codemirror";
 
