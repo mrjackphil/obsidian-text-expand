@@ -45,7 +45,7 @@ const sequences: Sequences[] = [
     {
         name: '\\$link',
         loop: true,
-        format: (p, _s: string, _content: string, file: TFile) => p.app.fileManager.generateMarkdownLink(file, file.path),
+        format: (p, _s: string, _content: string, file: TFile) => p.app.fileManager.generateMarkdownLink(file, file.path).replace('![[', '[['),
         desc: 'link based on Obsidian settings'
     },
     {
