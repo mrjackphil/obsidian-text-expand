@@ -1,6 +1,5 @@
 import {
     ExpanderQuery,
-    formatContent,
     getAllExpandersQuery,
     getClosestQuery,
     getLastLineToReplace
@@ -17,6 +16,7 @@ import {
 } from 'obsidian';
 import CodeMirror from 'codemirror'
 import sequences, {Sequences} from "./sequences/sequences";
+import {splitByLines} from "./helpers/string";
 
 interface PluginSettings {
     delay: number
@@ -233,7 +233,7 @@ export default class TextExpander extends Plugin {
             {line: query.end + 1, ch: 0},
             {line: lastLine, ch: this.cm.getLine(lastLine)?.length || 0})
 
-        const newContent = formatContent(this.cm.getValue())
+        const newContent = splitByLines(this.cm.getValue())
 
         this.search(query.query)
         return await this.startTemplateMode(query, getLastLineToReplace(newContent, query, this.config.lineEnding), prefixes)
@@ -252,14 +252,14 @@ export default class TextExpander extends Plugin {
         const curNum = cmDoc.getCursor().line
         const content = cmDoc.getValue()
 
-        const formatted = formatContent(content)
+        const formatted = splitByLines(content)
         let findQueries = getAllExpandersQuery(formatted)
         const closestQuery = getClosestQuery(findQueries, curNum)
 
         if (proceedAllQueriesOnPage) {
             findQueries.reduce((promise, query, i) =>
                 promise.then(() => {
-                    const newContent = formatContent(cmDoc.getValue())
+                    const newContent = splitByLines(cmDoc.getValue())
                     const updatedQueries = getAllExpandersQuery(newContent)
 
                     return this.runQuery(updatedQueries[i], newContent)

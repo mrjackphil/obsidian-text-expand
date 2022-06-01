@@ -1,11 +1,10 @@
 import {
     ExpanderQuery,
-    formatContent,
     getAllExpandersQuery,
     getClosestQuery,
-    getLastLineToReplace,
-    trimContent
+    getLastLineToReplace
 } from './helpers'
+import {splitByLines, trimContent} from "./string";
 
 const content = [
     '```expander',
@@ -28,30 +27,30 @@ const content2 = [
 
 describe('test query getter', () => {
     test('one query', () => {
-        const formattedContent = formatContent(content)
+        const formattedContent = splitByLines(content)
         const result = getAllExpandersQuery(formattedContent)
         expect(result.length).toBe(1)
     })
 
     test('two queries', () => {
-        const formattedContent = formatContent(content2)
+        const formattedContent = splitByLines(content2)
         const result = getAllExpandersQuery(formattedContent)
         expect(result.length).toBe(2)
     })
     test('should have query', () => {
-        const formattedContent = formatContent(content)
+        const formattedContent = splitByLines(content)
         const result = getAllExpandersQuery(formattedContent)
         expect(result[0].query).toBe('{{template}}')
     })
 
     test('should have template', () => {
-        const formattedContent = formatContent(content2)
+        const formattedContent = splitByLines(content2)
         const result = getAllExpandersQuery(formattedContent)
         expect(result[1].template).toBe('- [[$filename]]')
     })
 
     test('should have multiline template', () => {
-        const formattedContent = formatContent(`\`\`\`expander\n{{template}}\nhead\nbody\nfooter\n\`\`\`\notherline\n`)
+        const formattedContent = splitByLines(`\`\`\`expander\n{{template}}\nhead\nbody\nfooter\n\`\`\`\notherline\n`)
         const result = getAllExpandersQuery(formattedContent)
         expect(result[0].template).toBe('head\nbody\nfooter')
     })

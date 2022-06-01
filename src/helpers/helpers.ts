@@ -5,10 +5,6 @@ export interface ExpanderQuery {
     query: string
 }
 
-export function formatContent(content: string): string[] {
-    return content.split('\n')
-}
-
 export function getAllExpandersQuery(content: string[]): ExpanderQuery[] {
     let accum: ExpanderQuery[] = []
     for (var i = 0; i < content.length; i++) {
@@ -57,36 +53,3 @@ export function getLastLineToReplace(content: string[], query: ExpanderQuery, en
     return lineFrom + 1
 }
 
-export function trimContent(s: string) {
-    const removeEmptyLines = (s: string): string => {
-        const lines = s.split('\n').map(e => e.trim())
-        if (lines.length < 2) {
-            return s
-        }
-
-        if (lines.indexOf('') === 0) {
-            return removeEmptyLines(lines.slice(1).join('\n'))
-        }
-
-        return s
-    }
-    const removeFrontMatter = (s: string, lookEnding: boolean = false): string => {
-        const lines = s.split('\n')
-
-        if (lookEnding && lines.indexOf('---') === 0) {
-            return lines.slice(1).join('\n')
-        }
-
-        if (lookEnding) {
-            return removeFrontMatter(lines.slice(1).join('\n'), true)
-        }
-
-        if (lines.indexOf('---') === 0) {
-            return removeFrontMatter(lines.slice(1).join('\n'), true)
-        }
-
-        return s
-    }
-
-    return removeFrontMatter(removeEmptyLines(s))
-}

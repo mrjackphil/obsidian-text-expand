@@ -1,7 +1,7 @@
 import {TFile} from "obsidian";
-import {trimContent} from "../helpers/helpers";
 import TextExpander, {SearchDetails} from "../main";
 import {off} from "codemirror";
+import {trimContent} from "../helpers/string";
 
 export interface Sequences {
     loop: boolean
