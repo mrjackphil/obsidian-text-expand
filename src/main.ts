@@ -1,6 +1,14 @@
 import {ExpanderQuery, getAllExpandersQuery, getClosestQuery, getLastLineToReplace} from 'src/helpers/helpers';
-import {App, FileView, MarkdownView, Plugin, PluginManifest, PluginSettingTab, Setting, TFile} from 'obsidian';
-import CodeMirror from 'codemirror'
+import {
+    App, Editor,
+    FileView,
+    MarkdownView,
+    Plugin,
+    PluginManifest,
+    PluginSettingTab,
+    Setting,
+    TFile
+} from 'obsidian';
 import sequences, {Sequences} from "./sequences/sequences";
 import {splitByLines} from "./helpers/string";
 import {extractFilesFromSearchResults} from "./helpers/search-results";
@@ -42,7 +50,7 @@ export interface SearchDetails {
 }
 
 export default class TextExpander extends Plugin {
-    cm: CodeMirror.Editor
+    cm: Editor
 
     config: PluginSettings = {
         autoExpand: false,
@@ -127,8 +135,11 @@ export default class TextExpander extends Plugin {
             return
         }
 
-        // @ts-ignore
-        let cmDoc = this.cm = currentView.sourceMode.cmEditor
+        let cmDoc: Editor;
+
+        if (currentView instanceof MarkdownView) {
+            cmDoc = this.cm = currentView.editor
+        }
 
         const curNum = cmDoc.getCursor().line
         const content = cmDoc.getValue()
@@ -265,7 +276,7 @@ export default class TextExpander extends Plugin {
                 searchTabId = leaf.id;
             }
         });
-        return leftTabs.findIndex((item: any, index: number, array: any[]) => {
+        return leftTabs.findIndex((item: any, _index: number, _array: any[]) => {
             if (item.id == searchTabId) {
                 return true;
             }
