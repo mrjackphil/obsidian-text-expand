@@ -12,6 +12,7 @@ import {
 import sequences, {Sequences} from "./sequences/sequences";
 import {splitByLines} from "./helpers/string";
 import {extractFilesFromSearchResults} from "./helpers/search-results";
+import doT from "./modules/doT/doT";
 
 interface PluginSettings {
     delay: number
@@ -106,7 +107,7 @@ export default class TextExpander extends Plugin {
                 return
             }
 
-            this.init(true)
+            await this.init(true)
 
         })
 
@@ -123,8 +124,8 @@ export default class TextExpander extends Plugin {
         console.log('unloading plugin');
     }
 
-    saveSettings() {
-        this.saveData(this.config)
+    async saveSettings() {
+        await this.saveData(this.config)
     }
 
     private async init(proceedAllQueriesOnPage = false) {
@@ -180,16 +181,7 @@ export default class TextExpander extends Plugin {
 
         const templateContent = query.template.split('\n')
 
-        const isHeader = (line: string) => line.startsWith(prefixes.header)
-        const isFooter = (line: string) => line.startsWith(prefixes.footer)
-        const isRepeat = (line: string) => !isHeader(line) && !isFooter(line)
-
-        const heading = templateContent.filter(isHeader).map((s) => s.slice(1))
-        const footer = templateContent.filter(isFooter).map((s) => s.slice(1))
-        const repeatableContent =
-            templateContent.filter(isRepeat).filter(e => e).length === 0
-                ? [this.config.defaultTemplate]
-                : templateContent.filter(isRepeat).filter(e => e)
+        const {heading, footer, repeatableContent} = this.parseTemplate(prefixes, templateContent);
 
         if (currentView instanceof FileView) {
             currentFileName = currentView.file.basename
@@ -199,24 +191,32 @@ export default class TextExpander extends Plugin {
 
         const files = extractFilesFromSearchResults(searchResults, currentFileName, this.config.excludeCurrent);
 
-        files.forEach(file => console.log(this.app.metadataCache.getFileCache(file)))
-
-        const changed = await Promise.all(
-            files
-                .map(async (file, i) => {
-                    const result = await Promise.all(repeatableContent.map(async (s) => await this.applyTemplateToSearchResults(searchResults, file, s, i)))
-                    return result.join('\n')
-                })
+        const filesInfo = await Promise.all(
+            files.map(async (file, i) => {
+                return Object.assign({},
+                    file,
+                    {
+                        content: this.app.vault.cachedRead(file),
+                        link: this.app.fileManager.generateMarkdownLink(file, file.path)
+                    },
+                    this.app.metadataCache.getFileCache(file))
+            })
         )
 
-        const result = [
-            ' ',
-            heading.join('\n'),
-            changed.join('\n'),
-            footer.join('\n'),
-            ' ',
+        let changed = ''
+        if (query.template.contains("{{")) {
+            changed = doT.template(repeatableContent.join('\n'), { strip: false })({ files: filesInfo })
+        } else {
+            changed = await this.generateTemplateFromSequences(files, repeatableContent, searchResults);
+        }
+
+        let result = [
+            heading,
+            changed,
+            footer,
             this.config.lineEnding
         ].filter(e => e).join('\n')
+
 
         // Do not paste generated content if used changed activeLeaf
         const viewBeforeReplace = this.app.workspace.activeLeaf.view
@@ -229,6 +229,32 @@ export default class TextExpander extends Plugin {
             {line: lastLine, ch: this.cm.getLine(lastLine)?.length || 0})
 
         return Promise.resolve()
+    }
+
+    private async generateTemplateFromSequences(files: TFile[], repeatableContent: string[], searchResults: Map<TFile, SearchDetails>): Promise<string> {
+        const changed = await Promise.all(
+            files
+                .map(async (file, i) => {
+                    const result = await Promise.all(repeatableContent.map(async (s) => await this.applyTemplateToSearchResults(searchResults, file, s, i)))
+                    return result.join('\n')
+                })
+        )
+
+        return changed.join('\n');
+    }
+
+    private parseTemplate(prefixes: { header: string; footer: string }, templateContent: string[]) {
+        const isHeader = (line: string) => line.startsWith(prefixes.header)
+        const isFooter = (line: string) => line.startsWith(prefixes.footer)
+        const isRepeat = (line: string) => !isHeader(line) && !isFooter(line)
+
+        const heading = templateContent.filter(isHeader).map((s) => s.slice(1)).join('\n')
+        const footer = templateContent.filter(isFooter).map((s) => s.slice(1)).join('\n')
+        const repeatableContent =
+            templateContent.filter(isRepeat).filter(e => e).length === 0
+                ? [this.config.defaultTemplate]
+                : templateContent.filter(isRepeat).filter(e => e)
+        return {heading, footer, repeatableContent};
     }
 
     private search(s: string) {
