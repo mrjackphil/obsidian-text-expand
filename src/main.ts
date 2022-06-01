@@ -181,12 +181,9 @@ export default class TextExpander extends Plugin {
             this.config.lineEnding
         ].filter(e => e).join('\n')
 
+        // Do not paste generated content if used changed activeLeaf
         const viewBeforeReplace = this.app.workspace.activeLeaf.view
-        if (viewBeforeReplace instanceof MarkdownView) {
-            if (viewBeforeReplace.file.basename !== currentFileName) {
-                return
-            }
-        } else {
+        if (!(viewBeforeReplace instanceof MarkdownView) || viewBeforeReplace.file.basename !== currentFileName) {
             return
         }
 
