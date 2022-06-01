@@ -1,19 +1,5 @@
-import {
-    ExpanderQuery,
-    getAllExpandersQuery,
-    getClosestQuery,
-    getLastLineToReplace
-} from 'src/helpers/helpers';
-import {
-    App,
-    Plugin,
-    PluginSettingTab,
-    Setting,
-    TFile,
-    FileView,
-    MarkdownView,
-    PluginManifest
-} from 'obsidian';
+import {ExpanderQuery, getAllExpandersQuery, getClosestQuery, getLastLineToReplace} from 'src/helpers/helpers';
+import {App, FileView, MarkdownView, Plugin, PluginManifest, PluginSettingTab, Setting, TFile} from 'obsidian';
 import CodeMirror from 'codemirror'
 import sequences, {Sequences} from "./sequences/sequences";
 import {splitByLines} from "./helpers/string";
@@ -94,28 +80,36 @@ export default class TextExpander extends Plugin {
         const search = (query: string) => globalSearchFn(query)
 
         const leftSplitState = {
-            // @ts-ignore
             collapsed: this.app.workspace.leftSplit.collapsed,
-            // @ts-ignore
             tab: this.getSearchTabIndex()
         }
 
         search(s)
         if (leftSplitState.collapsed) {
-            // @ts-ignore
             this.app.workspace.leftSplit.collapse()
         }
 
-        // @ts-ignore
-        if (leftSplitState.tab !== this.app.workspace.leftSplit.children[0].currentTab) {
-            // @ts-ignore
-            this.app.workspace.leftSplit.children[0].selectTabIndex(leftSplitState.tab)
+        const splitChildren = this.getLeftSplitElement()
+        if (leftSplitState.tab !== splitChildren.currentTab) {
+            splitChildren.selectTabIndex(leftSplitState.tab)
         }
     }
 
+    getLeftSplitElement(): {
+        currentTab: number
+        selectTabIndex: (n: number) => void
+        children: {
+            findIndex: (c: (item: any, i: number, ar: any[]) => void) => number
+        }
+    } {
+        // @ts-ignore
+        return this.app.workspace.leftSplit.children[0];
+    }
+
     getSearchTabIndex(): number {
-        let leftTabs = this.app.workspace.leftSplit.children[0].children;
+        const leftTabs = this.getLeftSplitElement().children;
         let searchTabId: string;
+
         this.app.workspace.iterateAllLeaves((leaf: any) => {
             if (leaf.getViewState().type == "search") { searchTabId = leaf.id; }
         });
@@ -206,11 +200,9 @@ export default class TextExpander extends Plugin {
     private extractFilesFromSearchResults(searchResults: Map<TFile, SearchDetails>, currentFileName: string) {
         const files = Array.from(searchResults.keys())
 
-        const filterFiles = this.config.excludeCurrent
+        return this.config.excludeCurrent
             ? files.filter(file => file.basename !== currentFileName)
-            : files
-
-        return filterFiles;
+            : files;
     }
 
     async runQuery(query: ExpanderQuery, content: string[]) {
@@ -241,6 +233,7 @@ export default class TextExpander extends Plugin {
             return
         }
 
+        // @ts-ignore
         const cmDoc = this.cm = currentView.sourceMode.cmEditor
         const curNum = cmDoc.getCursor().line
         const content = cmDoc.getValue()
