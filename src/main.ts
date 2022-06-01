@@ -75,7 +75,7 @@ export default class TextExpander extends Plugin {
         super(app, plugin);
 
         this.search = this.search.bind(this)
-        this.initExpander = this.initExpander.bind(this)
+        this.init = this.init.bind(this)
         this.reformatLinks = this.reformatLinks.bind(this)
     }
 
@@ -239,10 +239,12 @@ export default class TextExpander extends Plugin {
         return await this.startTemplateMode(query, getLastLineToReplace(newContent, query, this.config.lineEnding), prefixes)
     }
 
-    initExpander(all = false) {
+    init(proceedAllQueriesOnPage = false) {
         const currentView = this.app.workspace.activeLeaf.view
+        const isInEditableView = currentView instanceof MarkdownView
 
-        if (!(currentView instanceof MarkdownView)) {
+        // Is on editable view
+        if (!isInEditableView) {
             return
         }
 
@@ -254,7 +256,7 @@ export default class TextExpander extends Plugin {
         let findQueries = getAllExpandersQuery(formatted)
         const closestQuery = getClosestQuery(findQueries, curNum)
 
-        if (all) {
+        if (proceedAllQueriesOnPage) {
             findQueries.reduce((promise, query, i) =>
                 promise.then(() => {
                     const newContent = formatContent(cmDoc.getValue())
@@ -274,14 +276,14 @@ export default class TextExpander extends Plugin {
         this.addCommand({
             id: 'editor-expand',
             name: 'expand',
-            callback: this.initExpander,
+            callback: this.init,
             hotkeys: []
         })
 
         this.addCommand({
             id: 'editor-expand-all',
             name: 'expand all',
-            callback: () => this.initExpander(true),
+            callback: () => this.init(true),
             hotkeys: []
         })
 
@@ -301,7 +303,7 @@ export default class TextExpander extends Plugin {
                 return
             }
 
-            this.initExpander(true)
+            this.init(true)
 
         })
 
