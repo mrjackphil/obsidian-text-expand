@@ -76,7 +76,6 @@ export default class TextExpander extends Plugin {
 
         this.search = this.search.bind(this)
         this.init = this.init.bind(this)
-        this.reformatLinks = this.reformatLinks.bind(this)
     }
 
     getFrontMatter(s: string, r: TFile) {
@@ -87,18 +86,6 @@ export default class TextExpander extends Plugin {
         }
 
         return ''
-    }
-
-    reformatLinks(links: TFile[], mapFunc = (s: string) => '[[' + s + ']]') {
-        const currentView = this.app.workspace.activeLeaf.view
-
-        if (currentView instanceof FileView) {
-            return links?.map(e => e.basename)
-                .filter(e => currentView.file.basename !== e)
-                ?.map(mapFunc)?.join('\n')
-        }
-
-        return links?.map(e => e.basename)?.map(mapFunc)?.join('\n')
     }
 
     search(s: string) {
