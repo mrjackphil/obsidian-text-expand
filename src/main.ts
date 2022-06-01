@@ -135,11 +135,7 @@ export default class TextExpander extends Plugin {
             return
         }
 
-        let cmDoc: Editor;
-
-        if (currentView instanceof MarkdownView) {
-            cmDoc = this.cm = currentView.editor
-        }
+        const cmDoc: Editor = this.cm = currentView.editor
 
         const curNum = cmDoc.getCursor().line
         const content = cmDoc.getValue()
