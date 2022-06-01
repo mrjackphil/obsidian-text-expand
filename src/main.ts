@@ -65,38 +65,6 @@ export default class TextExpander extends Plugin {
         this.init = this.init.bind(this)
     }
 
-    init(proceedAllQueriesOnPage = false) {
-        const currentView = this.app.workspace.activeLeaf.view
-        const isInEditableView = currentView instanceof MarkdownView
-
-        // Is on editable view
-        if (!isInEditableView) {
-            return
-        }
-
-        // @ts-ignore
-        const cmDoc = this.cm = currentView.sourceMode.cmEditor
-        const curNum = cmDoc.getCursor().line
-        const content = cmDoc.getValue()
-
-        const formatted = splitByLines(content)
-        let findQueries = getAllExpandersQuery(formatted)
-        const closestQuery = getClosestQuery(findQueries, curNum)
-
-        if (proceedAllQueriesOnPage) {
-            findQueries.reduce((promise, query, i) =>
-                promise.then(() => {
-                    const newContent = splitByLines(cmDoc.getValue())
-                    const updatedQueries = getAllExpandersQuery(newContent)
-
-                    return this.runQuery(updatedQueries[i], newContent)
-                }), Promise.resolve()
-            )
-        } else {
-            this.runQuery(closestQuery, formatted)
-        }
-    }
-
     async onload() {
         this.addSettingTab(new SettingTab(this.app, this));
 
@@ -149,6 +117,111 @@ export default class TextExpander extends Plugin {
 
     saveSettings() {
         this.saveData(this.config)
+    }
+
+    private async init(proceedAllQueriesOnPage = false) {
+        const currentView = this.app.workspace.activeLeaf.view
+        const isInEditableView = currentView instanceof MarkdownView
+
+        // Is on editable view
+        if (!isInEditableView) {
+            return
+        }
+
+        // @ts-ignore
+        const cmDoc = this.cm = currentView.sourceMode.cmEditor
+        const curNum = cmDoc.getCursor().line
+        const content = cmDoc.getValue()
+
+        const formatted = splitByLines(content)
+        let findQueries = getAllExpandersQuery(formatted)
+        const closestQuery = getClosestQuery(findQueries, curNum)
+
+        if (proceedAllQueriesOnPage) {
+            await findQueries.reduce((promise, query, i) =>
+                promise.then(() => {
+                    const newContent = splitByLines(cmDoc.getValue())
+                    const updatedQueries = getAllExpandersQuery(newContent)
+
+                    return this.runExpanderCodeBlock(updatedQueries[i], newContent)
+                }), Promise.resolve()
+            )
+        } else {
+            await this.runExpanderCodeBlock(closestQuery, formatted)
+        }
+    }
+
+    private async runExpanderCodeBlock(query: ExpanderQuery, content: string[]) {
+        const {lineEnding, prefixes} = this.config
+
+        if (!query) {
+            new Notification('Expand query not found')
+            return Promise.resolve()
+        }
+
+        this.clearOldResultsInFile(content, query, lineEnding);
+
+        const newContent = splitByLines(this.cm.getValue());
+
+        this.search(query.query)
+        return await this.runTemplateProcessing(query, getLastLineToReplace(newContent, query, this.config.lineEnding), prefixes)
+    }
+
+    private async runTemplateProcessing(query: ExpanderQuery, lastLine: number, prefixes: PluginSettings["prefixes"]) {
+        const currentView = this.app.workspace.activeLeaf.view
+        let currentFileName = ''
+
+        const templateContent = query.template.split('\n')
+
+        const isHeader = (line: string) => line.startsWith(prefixes.header)
+        const isFooter = (line: string) => line.startsWith(prefixes.footer)
+        const isRepeat = (line: string) => !isHeader(line) && !isFooter(line)
+
+        const heading = templateContent.filter(isHeader).map((s) => s.slice(1))
+        const footer = templateContent.filter(isFooter).map((s) => s.slice(1))
+        const repeatableContent =
+            templateContent.filter(isRepeat).filter(e => e).length === 0
+                ? [this.config.defaultTemplate]
+                : templateContent.filter(isRepeat).filter(e => e)
+
+        if (currentView instanceof FileView) {
+            currentFileName = currentView.file.basename
+        }
+
+        const searchResults = await this.getFoundAfterDelay()
+
+        const files = extractFilesFromSearchResults(searchResults, currentFileName, this.config.excludeCurrent);
+
+        files.forEach(file => console.log(this.app.metadataCache.getFileCache(file)))
+
+        const changed = await Promise.all(
+            files
+                .map(async (file, i) => {
+                    const result = await Promise.all(repeatableContent.map(async (s) => await this.applyTemplateToSearchResults(searchResults, file, s, i)))
+                    return result.join('\n')
+                })
+        )
+
+        const result = [
+            ' ',
+            heading.join('\n'),
+            changed.join('\n'),
+            footer.join('\n'),
+            ' ',
+            this.config.lineEnding
+        ].filter(e => e).join('\n')
+
+        // Do not paste generated content if used changed activeLeaf
+        const viewBeforeReplace = this.app.workspace.activeLeaf.view
+        if (!(viewBeforeReplace instanceof MarkdownView) || viewBeforeReplace.file.basename !== currentFileName) {
+            return
+        }
+
+        this.cm.replaceRange(result,
+            {line: query.end + 1, ch: 0},
+            {line: lastLine, ch: this.cm.getLine(lastLine)?.length || 0})
+
+        return Promise.resolve()
     }
 
     private search(s: string) {
@@ -212,63 +285,6 @@ export default class TextExpander extends Plugin {
         })
     }
 
-    private async startTemplateMode(query: ExpanderQuery, lastLine: number, prefixes: PluginSettings["prefixes"]) {
-        const currentView = this.app.workspace.activeLeaf.view
-        let currentFileName = ''
-
-        const templateContent = query.template.split('\n')
-
-        const isHeader = (line: string) => line.startsWith(prefixes.header)
-        const isFooter = (line: string) => line.startsWith(prefixes.footer)
-        const isRepeat = (line: string) => !isHeader(line) && !isFooter(line)
-
-        const heading = templateContent.filter(isHeader).map((s) => s.slice(1))
-        const footer = templateContent.filter(isFooter).map((s) => s.slice(1))
-        const repeatableContent =
-            templateContent.filter(isRepeat).filter(e => e).length === 0
-                ? [this.config.defaultTemplate]
-                : templateContent.filter(isRepeat).filter(e => e)
-
-        if (currentView instanceof FileView) {
-            currentFileName = currentView.file.basename
-        }
-
-        const searchResults = await this.getFoundAfterDelay()
-
-        const files = extractFilesFromSearchResults(searchResults, currentFileName, this.config.excludeCurrent);
-
-        files.forEach(file => console.log(this.app.metadataCache.getFileCache(file)))
-
-        const changed = await Promise.all(
-            files
-                .map(async (file, i) => {
-                    const result = await Promise.all(repeatableContent.map(async (s) => await this.applyTemplateToSearchResults(searchResults, file, s, i)))
-                    return result.join('\n')
-                })
-        )
-
-        const result = [
-            ' ',
-            heading.join('\n'),
-            changed.join('\n'),
-            footer.join('\n'),
-            ' ',
-            this.config.lineEnding
-        ].filter(e => e).join('\n')
-
-        // Do not paste generated content if used changed activeLeaf
-        const viewBeforeReplace = this.app.workspace.activeLeaf.view
-        if (!(viewBeforeReplace instanceof MarkdownView) || viewBeforeReplace.file.basename !== currentFileName) {
-            return
-        }
-
-        this.cm.replaceRange(result,
-            {line: query.end + 1, ch: 0},
-            {line: lastLine, ch: this.cm.getLine(lastLine)?.length || 0})
-
-        return Promise.resolve()
-    }
-
     private async applyTemplateToSearchResults(searchResults: Map<TFile, SearchDetails>, file: TFile, template: string, index: number) {
         const fileContent = (new RegExp(this.seqs.filter(e => e.readContent).map(e => e.name).join('|')).test(template))
             ? await this.app.vault.cachedRead(file)
@@ -276,22 +292,6 @@ export default class TextExpander extends Plugin {
 
         return this.seqs.reduce((acc, seq) =>
             acc.replace(new RegExp(seq.name, 'gu'), replace => seq.format(this, replace, fileContent, file, searchResults.get(file), index)), template)
-    }
-
-    private async runQuery(query: ExpanderQuery, content: string[]) {
-        const {lineEnding, prefixes} = this.config
-
-        if (!query) {
-            new Notification('Expand query not found')
-            return Promise.resolve()
-        }
-
-        this.clearOldResultsInFile(content, query, lineEnding);
-
-        const newContent = splitByLines(this.cm.getValue());
-
-        this.search(query.query)
-        return await this.startTemplateMode(query, getLastLineToReplace(newContent, query, this.config.lineEnding), prefixes)
     }
 
     private clearOldResultsInFile(content: string[], query: ExpanderQuery, lineEnding: string) {
