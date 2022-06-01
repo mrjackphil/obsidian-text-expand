@@ -121,15 +121,15 @@ export default class TextExpander extends Plugin {
 
     private async init(proceedAllQueriesOnPage = false) {
         const currentView = this.app.workspace.activeLeaf.view
-        const isInEditableView = currentView instanceof MarkdownView
 
         // Is on editable view
-        if (!isInEditableView) {
+        if (!(currentView instanceof MarkdownView)) {
             return
         }
 
         // @ts-ignore
-        const cmDoc = this.cm = currentView.sourceMode.cmEditor
+        let cmDoc = this.cm = currentView.sourceMode.cmEditor
+
         const curNum = cmDoc.getCursor().line
         const content = cmDoc.getValue()
 
