@@ -159,25 +159,15 @@ export default class TextExpander extends Plugin {
         }
 
         const searchResults = await this.getFoundAfterDelay()
-        const files = Array.from(searchResults.keys())
 
-        const filterFiles = this.config.excludeCurrent
-            ? files.filter(file => file.basename !== currentFileName)
-            : files
+        const files = this.extractFilesFromSearchResults(searchResults, currentFileName);
 
-        const format = async (r: TFile, template: string, index: number) => {
-            const fileContent = (new RegExp(this.seqs.filter(e => e.readContent).map(e => e.name).join('|')).test(template))
-                ? await this.app.vault.cachedRead(r)
-                : ''
-
-            return this.seqs.reduce((acc, seq) =>
-                acc.replace(new RegExp(seq.name, 'gu'), replace => seq.format(this, replace, fileContent, r, searchResults.get(r), index)), template)
-        }
+        files.forEach(file => console.log(this.app.metadataCache.getFileCache(file)))
 
         const changed = await Promise.all(
-            filterFiles
+            files
                 .map(async (file, i) => {
-                    const result = await Promise.all(repeatableContent.map(async (s) => await format(file, s, i)))
+                    const result = await Promise.all(repeatableContent.map(async (s) => await this.searchResultFormatter(searchResults, file, s, i)))
                     return result.join('\n')
                 })
         )
@@ -205,6 +195,25 @@ export default class TextExpander extends Plugin {
             {line: lastLine, ch: this.cm.getLine(lastLine)?.length || 0})
 
         return Promise.resolve()
+    }
+
+    private async searchResultFormatter(searchResults: Map<TFile, SearchDetails>, r: TFile, template: string, index: number) {
+        const fileContent = (new RegExp(this.seqs.filter(e => e.readContent).map(e => e.name).join('|')).test(template))
+            ? await this.app.vault.cachedRead(r)
+            : ''
+
+        return this.seqs.reduce((acc, seq) =>
+            acc.replace(new RegExp(seq.name, 'gu'), replace => seq.format(this, replace, fileContent, r, searchResults.get(r), index)), template)
+    }
+
+    private extractFilesFromSearchResults(searchResults: Map<TFile, SearchDetails>, currentFileName: string) {
+        const files = Array.from(searchResults.keys())
+
+        const filterFiles = this.config.excludeCurrent
+            ? files.filter(file => file.basename !== currentFileName)
+            : files
+
+        return filterFiles;
     }
 
     async runQuery(query: ExpanderQuery, content: string[]) {
