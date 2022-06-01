@@ -1,7 +1,7 @@
 import {TFile} from "obsidian";
 import TextExpander, {SearchDetails} from "../main";
-import {off} from "codemirror";
 import {trimContent} from "../helpers/string";
+import {getFrontMatter} from "../helpers/tfile";
 
 export interface Sequences {
     loop: boolean
@@ -81,7 +81,7 @@ const sequences: Sequences[] = [
     {
         name: '\\$frontmatter:[\\p\{L\}_-]+',
         loop: true,
-        format: (p, s: string, _content: string, file: TFile) => p.getFrontMatter(s, file),
+        format: (p, s: string, _content: string, file: TFile) => getFrontMatter(file, p, s),
         desc: 'value from the frontmatter key in the found file'
     },
     {
