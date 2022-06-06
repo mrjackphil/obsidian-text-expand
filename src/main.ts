@@ -197,7 +197,7 @@ export default class TextExpander extends Plugin {
                     file,
                     {
                         content: this.app.vault.cachedRead(file),
-                        link: this.app.fileManager.generateMarkdownLink(file, file.path)
+                        link: this.app.fileManager.generateMarkdownLink(file, file.basename)
                     },
                     this.app.metadataCache.getFileCache(file))
             })

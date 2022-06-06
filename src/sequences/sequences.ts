@@ -196,7 +196,7 @@ const sequences: Sequences[] = [
                 .slice(-1)
 
             return headings
-                .map(h => p.app.fileManager.generateMarkdownLink(file, file.path, '#' + h.heading))
+                .map(h => p.app.fileManager.generateMarkdownLink(file, file.basename, '#' + h.heading))
                 .map(link => prefix + link)
                 .join('\n') || ''
         }, desc: 'extract found selections'
