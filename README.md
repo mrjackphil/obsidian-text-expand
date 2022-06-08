@@ -9,15 +9,6 @@
 This plugin will search files using [Obsidian search functionality](https://publish.obsidian.md/help/Plugins/Search)
 and then paste the result. The output can be customized using [template feature](#template-feature).
 
-## Install
-- Just use built-in plugin manager and find `Text expand` plugin
-### Manually
-- You need Obsidian v0.9.18+ for latest version of plugin
-- Get [Latest release](https://github.com/mrjackphil/obsidian-text-expand/releases/latest)
-- Extract files and place them to your vault's plugins folder: `<vault>/.obsidian/plugins/`
-- Reload Obsidian
-- If prompted about Safe Mode, you can disable safe mode and enable the plugin. Otherwise head to Settings, third-party plugins, make sure safe mode is off and enable the plugin from there.
-
 ## How to use
 - You should wrap your search request like that
 ```
@@ -32,8 +23,8 @@ and then paste the result. The output can be customized using [template feature]
 ### Template feature
 Using template feature you can customize an output. 
 - Put template below the SEARCH_QUERY line
-- Put a cursor inside code block with a templete 
--   Open command palette (`Ctrl+P`) and find `Text expand: expand` command
+- Put a cursor inside code block with a template
+- Open command palette (`Ctrl+P`) and find `Text expand: expand` command
 
 To create a list:
 
@@ -91,4 +82,14 @@ Syntax looks like that:
 - Line ending (default: `<-->`) - how will looks like the line below the expanded content
 - Default template (default: `- [[$filename]]`) - how will look the expanded content when no template provided
 - Prefixes - which prefix to use to recognize header/footer in template section
+
+## Install
+- Just use built-in plugin manager and find `Text expand` plugin
+
+### Manually
+- You need Obsidian v0.9.18+ for latest version of plugin
+- Get [Latest release](https://github.com/mrjackphil/obsidian-text-expand/releases/latest)
+- Extract files and place them to your vault's plugins folder: `<vault>/.obsidian/plugins/`
+- Reload Obsidian
+- If prompted about Safe Mode, you can disable safe mode and enable the plugin. Otherwise head to Settings, third-party plugins, make sure safe mode is off and enable the plugin from there.
 
