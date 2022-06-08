@@ -196,16 +196,28 @@ export default class TextExpander extends Plugin {
                 return Object.assign({},
                     file,
                     {
-                        content: this.app.vault.cachedRead(file),
+                        content: await this.app.vault.cachedRead(file),
                         link: this.app.fileManager.generateMarkdownLink(file, file.basename)
                     },
-                    this.app.metadataCache.getFileCache(file))
+                    this.app.metadataCache.getFileCache(file)
+                )
             })
         )
 
         let changed = ''
         if (query.template.contains("{{")) {
-            changed = doT.template(repeatableContent.join('\n'), { strip: false })({ files: filesInfo })
+            changed = doT.template(repeatableContent.join('\n'), {strip: false})(
+                filesInfo.map(({basename, content, extension, headings, link, name, path, sections, stat}) => {
+                    return {
+                        basename,
+                        content,
+                        extension,
+                        headings,
+                        link, name,
+                        path, sections, stat
+                    }
+                })
+            )
         } else {
             changed = await this.generateTemplateFromSequences(files, repeatableContent, searchResults);
         }
