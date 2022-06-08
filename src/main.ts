@@ -192,7 +192,7 @@ export default class TextExpander extends Plugin {
         const files = extractFilesFromSearchResults(searchResults, currentFileName, this.config.excludeCurrent);
 
         const filesInfo = await Promise.all(
-            files.map(async (file, i) => {
+            files.map(async (file, _i) => {
                 return Object.assign({},
                     file,
                     {
@@ -204,7 +204,7 @@ export default class TextExpander extends Plugin {
             })
         )
 
-        let changed = ''
+        let changed;
         if (query.template.contains("{{")) {
             changed = doT.template(repeatableContent.join('\n'), {strip: false})(
                 filesInfo.map(({basename, content, extension, headings, link, name, path, sections, stat}) => {
