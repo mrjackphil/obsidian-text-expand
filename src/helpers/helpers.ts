@@ -56,6 +56,10 @@ export function getLastLineToReplace(content: string[], query: ExpanderQuery, en
 type LooseObject<T = any> = { [key: string]: T }
 
 export const pick = (obj: {[k: string]: any}, arr: string[]) =>
-    arr.reduce((acc, curr) => (curr in obj && (acc[curr] = obj[curr]), acc), <LooseObject>{});
+    arr.reduce((acc, curr) => {
+        return (curr in obj)
+            ? Object.assign({}, obj, { [curr]: obj[curr] })
+            : acc
+    }, <LooseObject>{});
 
 
