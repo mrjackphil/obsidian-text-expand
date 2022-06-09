@@ -177,7 +177,9 @@ export default class TextExpander extends Plugin {
 
         const newContent = splitByLines(this.cm.getValue());
 
-        this.search(query.query)
+        if (query.query !== '') {
+            this.search(query.query)
+        }
         return await this.runTemplateProcessing(query, getLastLineToReplace(newContent, query, this.config.lineEnding), prefixes)
     }
 
@@ -193,9 +195,14 @@ export default class TextExpander extends Plugin {
             currentFileName = currentView.file.basename
         }
 
-        const searchResults = await this.getFoundAfterDelay()
+        let searchResults: Map<TFile, SearchDetails> | undefined = undefined
+        let files: TFile[] = []
 
-        const files = extractFilesFromSearchResults(searchResults, currentFileName, this.config.excludeCurrent);
+        if(query.query !== '') {
+            searchResults = await this.getFoundAfterDelay()
+
+            files = extractFilesFromSearchResults(searchResults, currentFileName, this.config.excludeCurrent);
+        }
 
         const currentFileInfo: {} = (currentView instanceof FileView)
             ? await getFileInfo(this, currentView.file)
@@ -240,7 +247,9 @@ export default class TextExpander extends Plugin {
         return Promise.resolve()
     }
 
-    private async generateTemplateFromSequences(files: TFile[], repeatableContent: string[], searchResults: Map<TFile, SearchDetails>): Promise<string> {
+    private async generateTemplateFromSequences(files: TFile[], repeatableContent: string[], searchResults?: Map<TFile, SearchDetails>): Promise<string> {
+        if (!searchResults) { return '' }
+
         const changed = await Promise.all(
             files
                 .map(async (file, i) => {
