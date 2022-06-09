@@ -86,7 +86,7 @@ export default class TextExpander extends Plugin {
         this.registerMarkdownCodeBlockProcessor('expander', (source, el, ctx) => {
             el
                 .createDiv()
-                .createEl('button', { text: 'Run expand query', })
+                .createEl('button', {text: 'Run expand query',})
                 .addEventListener('click', this.init.bind(this, false, ctx.getSectionInfo(el).lineStart))
         })
 
