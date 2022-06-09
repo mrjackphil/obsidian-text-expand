@@ -23,5 +23,8 @@
     "ts-jest": "^26.5.2",
     "tslib": "^2.0.3",
     "typescript": "^4.0.3"
+  },
+  "dependencies": {
+    "eta": "^1.12.3"
   }
 }

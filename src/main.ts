@@ -1,4 +1,10 @@
-import {ExpanderQuery, getAllExpandersQuery, getClosestQuery, getLastLineToReplace} from 'src/helpers/helpers';
+import {
+    ExpanderQuery,
+    getAllExpandersQuery,
+    getClosestQuery,
+    getLastLineToReplace,
+    pick
+} from 'src/helpers/helpers';
 import {
     App, Editor,
     FileView,
@@ -12,7 +18,7 @@ import {
 import sequences, {Sequences} from "./sequences/sequences";
 import {splitByLines} from "./helpers/string";
 import {extractFilesFromSearchResults} from "./helpers/search-results";
-import doT from "./modules/doT/doT";
+import {render} from "eta";
 
 interface PluginSettings {
     delay: number
@@ -193,31 +199,31 @@ export default class TextExpander extends Plugin {
 
         const filesInfo = await Promise.all(
             files.map(async (file, _i) => {
-                return Object.assign({},
-                    file,
-                    {
-                        content: await this.app.vault.cachedRead(file),
-                        link: this.app.fileManager.generateMarkdownLink(file, file.basename)
+                const info = Object.assign({}, file, {
+                        content: file.extension === 'md' ? await this.app.vault.cachedRead(file) : '',
+                        link: this.app.fileManager.generateMarkdownLink(file, file.name).replace(/^!/, '')
                     },
                     this.app.metadataCache.getFileCache(file)
                 )
+                return pick(info, [
+                    'basename',
+                    'content',
+                    'extension',
+                    'headings',
+                    'link', 'name',
+                    'path', 'sections', 'stat'
+                ])
             })
         )
 
         let changed;
-        if (query.template.contains("{{")) {
-            changed = doT.template(repeatableContent.join('\n'), {strip: false})(
-                filesInfo.map(({basename, content, extension, headings, link, name, path, sections, stat}) => {
-                    return {
-                        basename,
-                        content,
-                        extension,
-                        headings,
-                        link, name,
-                        path, sections, stat
-                    }
-                })
-            )
+
+        if (query.template.contains("<%")) {
+            const templateToRender = repeatableContent.join('\n')
+            const dataToRender = {files: filesInfo}
+
+            changed = await render(templateToRender, dataToRender, {autoEscape: false})
+            // changed = doT.template(templateToRender, {strip: false})(dataToRender)
         } else {
             changed = await this.generateTemplateFromSequences(files, repeatableContent, searchResults);
         }
