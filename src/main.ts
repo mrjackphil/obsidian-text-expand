@@ -2,8 +2,7 @@ import {
     ExpanderQuery,
     getAllExpandersQuery,
     getClosestQuery,
-    getLastLineToReplace,
-    pick
+    getLastLineToReplace
 } from 'src/helpers/helpers';
 import {
     App, Editor,
@@ -19,6 +18,7 @@ import sequences, {Sequences} from "./sequences/sequences";
 import {splitByLines} from "./helpers/string";
 import {extractFilesFromSearchResults} from "./helpers/search-results";
 import {render} from "eta";
+import {getFileInfo} from "./helpers/tfile";
 
 interface PluginSettings {
     delay: number
@@ -197,30 +197,21 @@ export default class TextExpander extends Plugin {
 
         const files = extractFilesFromSearchResults(searchResults, currentFileName, this.config.excludeCurrent);
 
+        const currentFileInfo: {} = (currentView instanceof FileView)
+            ? await getFileInfo(this, currentView.file)
+            : {}
         const filesInfo = await Promise.all(
-            files.map(async (file, _i) => {
-                const info = Object.assign({}, file, {
-                        content: file.extension === 'md' ? await this.app.vault.cachedRead(file) : '',
-                        link: this.app.fileManager.generateMarkdownLink(file, file.name).replace(/^!/, '')
-                    },
-                    this.app.metadataCache.getFileCache(file)
-                )
-                return pick(info, [
-                    'basename',
-                    'content',
-                    'extension',
-                    'headings',
-                    'link', 'name',
-                    'path', 'sections', 'stat'
-                ])
-            })
+            files.map(file => getFileInfo(this, file))
         )
 
         let changed;
 
         if (query.template.contains("<%")) {
             const templateToRender = repeatableContent.join('\n')
-            const dataToRender = {files: filesInfo}
+            const dataToRender = {
+                current: currentFileInfo,
+                files: filesInfo
+            }
 
             changed = await render(templateToRender, dataToRender, {autoEscape: false})
             // changed = doT.template(templateToRender, {strip: false})(dataToRender)
