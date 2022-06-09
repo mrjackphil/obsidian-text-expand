@@ -83,6 +83,13 @@ export default class TextExpander extends Plugin {
     async onload() {
         this.addSettingTab(new SettingTab(this.app, this));
 
+        this.registerMarkdownCodeBlockProcessor('expander', (source, el, ctx) => {
+            el
+                .createDiv()
+                .createEl('button', { text: 'Run expand query', })
+                .addEventListener('click', this.init.bind(this, false, ctx.getSectionInfo(el).lineStart))
+        })
+
         this.addCommand({
             id: 'editor-expand',
             name: 'expand',
@@ -134,7 +141,7 @@ export default class TextExpander extends Plugin {
         await this.saveData(this.config)
     }
 
-    private async init(proceedAllQueriesOnPage = false) {
+    private async init(proceedAllQueriesOnPage = false, lineToStart?: number) {
         const currentView = this.app.workspace.activeLeaf.view
 
         // Is on editable view
@@ -144,8 +151,10 @@ export default class TextExpander extends Plugin {
 
         const cmDoc: Editor = this.cm = currentView.editor
 
-        const curNum = cmDoc.getCursor().line
+        const curNum = lineToStart || cmDoc.getCursor().line
         const content = cmDoc.getValue()
+
+        cmDoc.setCursor(lineToStart ? lineToStart - 1 : 0)
 
         const formatted = splitByLines(content)
         let findQueries = getAllExpandersQuery(formatted)
@@ -198,7 +207,7 @@ export default class TextExpander extends Plugin {
         let searchResults: Map<TFile, SearchDetails> | undefined = undefined
         let files: TFile[] = []
 
-        if(query.query !== '') {
+        if (query.query !== '') {
             searchResults = await this.getFoundAfterDelay()
 
             files = extractFilesFromSearchResults(searchResults, currentFileName, this.config.excludeCurrent);
@@ -233,7 +242,6 @@ export default class TextExpander extends Plugin {
             this.config.lineEnding
         ].filter(e => e).join('\n')
 
-
         // Do not paste generated content if used changed activeLeaf
         const viewBeforeReplace = this.app.workspace.activeLeaf.view
         if (!(viewBeforeReplace instanceof MarkdownView) || viewBeforeReplace.file.basename !== currentFileName) {
@@ -248,7 +256,9 @@ export default class TextExpander extends Plugin {
     }
 
     private async generateTemplateFromSequences(files: TFile[], repeatableContent: string[], searchResults?: Map<TFile, SearchDetails>): Promise<string> {
-        if (!searchResults) { return '' }
+        if (!searchResults) {
+            return ''
+        }
 
         const changed = await Promise.all(
             files
