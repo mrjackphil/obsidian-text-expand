@@ -154,7 +154,9 @@ export default class TextExpander extends Plugin {
         const curNum = lineToStart || cmDoc.getCursor().line
         const content = cmDoc.getValue()
 
-        cmDoc.setCursor(lineToStart ? lineToStart - 1 : 0)
+        if (lineToStart) {
+            cmDoc.setCursor(lineToStart ? lineToStart - 1 : 0)
+        }
 
         const formatted = splitByLines(content)
         let findQueries = getAllExpandersQuery(formatted)
