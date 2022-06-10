@@ -159,7 +159,7 @@ export default class TextExpander extends Plugin {
         }
 
         const formatted = splitByLines(content)
-        let findQueries = getAllExpandersQuery(formatted)
+        const findQueries = getAllExpandersQuery(formatted)
         const closestQuery = getClosestQuery(findQueries, curNum)
 
         if (proceedAllQueriesOnPage) {
