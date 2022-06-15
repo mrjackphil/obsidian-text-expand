@@ -168,15 +168,15 @@ export default class TextExpander extends Plugin {
                     const newContent = splitByLines(cmDoc.getValue())
                     const updatedQueries = getAllExpandersQuery(newContent)
 
-                    return this.runExpanderCodeBlock(updatedQueries[i], newContent)
+                    return this.runExpanderCodeBlock(updatedQueries[i], newContent, currentView)
                 }), Promise.resolve()
             )
         } else {
-            await this.runExpanderCodeBlock(closestQuery, formatted)
+            await this.runExpanderCodeBlock(closestQuery, formatted, currentView)
         }
     }
 
-    private async runExpanderCodeBlock(query: ExpanderQuery, content: string[]) {
+    private async runExpanderCodeBlock(query: ExpanderQuery, content: string[], view: MarkdownView) {
         const {lineEnding, prefixes} = this.config
 
         if (!query) {
@@ -191,11 +191,10 @@ export default class TextExpander extends Plugin {
         if (query.query !== '') {
             this.search(query.query)
         }
-        return await this.runTemplateProcessing(query, getLastLineToReplace(newContent, query, this.config.lineEnding), prefixes)
+        return await this.runTemplateProcessing(query, getLastLineToReplace(newContent, query, this.config.lineEnding), prefixes, view)
     }
 
-    private async runTemplateProcessing(query: ExpanderQuery, lastLine: number, prefixes: PluginSettings["prefixes"]) {
-        const currentView = this.app.workspace.activeLeaf.view
+    private async runTemplateProcessing(query: ExpanderQuery, lastLine: number, prefixes: PluginSettings["prefixes"], currentView: MarkdownView) {
         let currentFileName = ''
 
         const templateContent = query.template.split('\n')
@@ -214,6 +213,8 @@ export default class TextExpander extends Plugin {
 
             files = extractFilesFromSearchResults(searchResults, currentFileName, this.config.excludeCurrent);
         }
+
+        currentView.editor.focus();
 
         const currentFileInfo: {} = (currentView instanceof FileView)
             ? await getFileInfo(this, currentView.file)
@@ -250,7 +251,7 @@ export default class TextExpander extends Plugin {
             return
         }
 
-        this.cm.replaceRange(result,
+        currentView.editor.replaceRange(result,
             {line: query.end + 1, ch: 0},
             {line: lastLine, ch: this.cm.getLine(lastLine)?.length || 0})
 
