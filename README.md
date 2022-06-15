@@ -1,6 +1,6 @@
 # Text expand
 
-> Hey, if you like this plugin, you can support me using [Patreon](https://patreon.com/mrjackphil), [Paypal](https://www.paypal.com/paypalme/mrjackphil) or [Buy me a cofee](https://www.buymeacoffee.com/mrjackphil).
+> Hey, if you like this plugin, you can support me using [Patreon](https://patreon.com/mrjackphil), [PayPal](https://www.paypal.com/paypalme/mrjackphil) or [Buy me a coffee](https://www.buymeacoffee.com/mrjackphil).
 > Or you can just share how plugin improves your note-taking experience.
 > Or just send me a message :)
 
@@ -88,8 +88,8 @@ Syntax looks like that:
 
 ### Manually
 - You need Obsidian v0.9.18+ for latest version of plugin
-- Get [Latest release](https://github.com/mrjackphil/obsidian-text-expand/releases/latest)
+- Get the [Latest release](https://github.com/mrjackphil/obsidian-text-expand/releases/latest)
 - Extract files and place them to your vault's plugins folder: `<vault>/.obsidian/plugins/`
 - Reload Obsidian
-- If prompted about Safe Mode, you can disable safe mode and enable the plugin. Otherwise head to Settings, third-party plugins, make sure safe mode is off and enable the plugin from there.
+- If prompted about Safe Mode, you can disable safe mode and enable the plugin. Otherwise, head to Settings, third-party plugins, make sure safe mode is off and enable the plugin from there.
 
