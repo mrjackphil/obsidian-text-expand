@@ -95,8 +95,9 @@ export default class TextExpander extends Plugin {
     constructor(app: App, plugin: PluginManifest) {
         super(app, plugin);
 
-        this.search = this.search.bind(this)
-        this.init = this.init.bind(this)
+        this.search = this.search.bind(this);
+        this.init = this.init.bind(this);
+        this.autoExpand = this.autoExpand.bind(this);
     }
 
     async autoExpand() {
@@ -124,7 +125,7 @@ export default class TextExpander extends Plugin {
         this.registerMarkdownCodeBlockProcessor('expander', (source, el, ctx) => {
             el
                 .createDiv()
-                .createEl('button', {text: 'Run expand query',})
+                .createEl('button', {text: 'Run expand query'})
                 .addEventListener('click', this.init.bind(this, false, ctx.getSectionInfo(el).lineStart))
         });
 
@@ -226,14 +227,12 @@ export default class TextExpander extends Plugin {
             currentFileName = currentView.file.basename
         }
 
-        let searchResults: Map<TFile, SearchDetails> | undefined = undefined
-        let files: TFile[] = []
+        this.saveLeftPanelState();
 
-        if (query.query !== '') {
-            searchResults = await this.getFoundAfterDelay()
+        const searchResults = await this.getFoundAfterDelay(query.query === '');
+        const files = extractFilesFromSearchResults(searchResults, currentFileName, this.config.excludeCurrent);
 
-            files = extractFilesFromSearchResults(searchResults, currentFileName, this.config.excludeCurrent);
-        }
+        this.restoreLeftPanelState();
 
         currentView.editor.focus();
 
@@ -309,6 +308,14 @@ export default class TextExpander extends Plugin {
         return {heading, footer, repeatableContent};
     }
 
+    private saveLeftPanelState(): void {
+        this.leftPanelInfo = {
+            collapsed: this.app.workspace.leftSplit.collapsed,
+            tab: this.getSearchTabIndex(),
+            text: this.getSearchValue(),
+        }
+    }
+
     private restoreLeftPanelState() {
         const {collapsed, tab, text} = this.leftPanelInfo;
         const splitChildren = this.getLeftSplitElement()
@@ -328,12 +335,6 @@ export default class TextExpander extends Plugin {
         // @ts-ignore
         const globalSearchFn = this.app.internalPlugins.getPluginById('global-search').instance.openGlobalSearch.bind(this)
         const search = (query: string) => globalSearchFn(query)
-
-        this.leftPanelInfo = {
-            collapsed: this.app.workspace.leftSplit.collapsed,
-            tab: this.getSearchTabIndex(),
-            text: this.getSearchValue(),
-        }
 
         search(s)
     }
@@ -383,16 +384,19 @@ export default class TextExpander extends Plugin {
         });
     };
 
-    private async getFoundAfterDelay(): Promise<Map<TFile, SearchDetails>> {
+    private async getFoundAfterDelay(immediate: boolean): Promise<Map<TFile, SearchDetails>> {
         const searchLeaf = this.app.workspace.getLeavesOfType('search')[0]
         const view = await searchLeaf.open(searchLeaf.view)
+
+        if (immediate) {
+            // @ts-ignore
+            return Promise.resolve(view.dom.resultDomLookup as Map<TFile, SearchDetails>);
+        }
+
         return new Promise(resolve => {
             setTimeout(() => {
                 // @ts-ignore
-                const results = view.dom.resultDomLookup as Map<TFile, SearchDetails>;
-                this.restoreLeftPanelState();
-
-                return resolve(results)
+                return resolve(view.dom.resultDomLookup as Map<TFile, SearchDetails>)
             }, this.config.delay)
         })
     }

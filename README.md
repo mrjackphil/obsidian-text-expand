@@ -1,13 +1,18 @@
 # Text expand
 
-> Hey, if you like this plugin, you can support me using [Patreon](https://patreon.com/mrjackphil), [PayPal](https://www.paypal.com/paypalme/mrjackphil) or [Buy me a coffee](https://www.buymeacoffee.com/mrjackphil).
-> Or you can just share how plugin improves your note-taking experience.
-> Or just send me a message :)
-
 ![](./screenshots/1.gif)
 
 This plugin will search files using [Obsidian search functionality](https://publish.obsidian.md/help/Plugins/Search)
-and then paste the result. The output can be customized using [template feature](#template-feature).
+and then paste the result. The output can be customized using [template feature](#templating).
+
+## Table of Contents
+
+- [Basic usage](#how-to-use)
+- [Search functionality]()
+- [Templating](#templating)
+    - [eta templating](#eta-templating)
+    - [Sequence templating (LEGACY)](#sequence-templating-legacy)
+        - [Available sequences](#special-sequences)
 
 ## How to use
 - You should wrap your search request like that
@@ -20,7 +25,18 @@ and then paste the result. The output can be customized using [template feature]
 - Find and run `Text expand: expand` command
 - It should search and put results below the wrapped request
 
-### Template feature
+## Search functionality
+
+First line in expander code block is always a search request.
+You can leave it empty to use results from 
+ 
+## Templating
+
+### eta templating
+
+You can use 
+
+### Sequence templating (LEGACY)
 Using template feature you can customize an output. 
 - Put template below the SEARCH_QUERY line
 - Put a cursor inside code block with a template
@@ -58,24 +74,27 @@ Syntax looks like that:
 - Line with no special symbol at start will be repeated for each file. Also, all special sequences will be replaced.
 
 #### Special sequences
-- `$filename` - return a basename of a file
-- `$link`- return wikilink
-- `$searchresult` - return the context displayed in the Obsidian search, depending on the amount of context that is selected in the search window
-- `$matchline` - return the line which contains the search query
-- `$matchline:2` - return the line which contains the search query and 2 lines after and before matched line
-- `$matchline:+2` - return the line which contains the search query and 2 lines after matched line
-- `$matchline:0:10` - return the line which contains the search query and limit line by 10 characters
-- `$lines` - return the full content of the file
-- `$lines:10` - return 10 lines from the file. 10 could be replaced on any number
-- `$ext` - return extension of the file
-- `$created`
-- `$size`
-- `$parent` - return parent folder
-- `$path` - return path to file
-- `$frontmatter:NAME` - return frontmatter value from field `NAME`
-- `$header:##` - extract all headers as links
-- `$header:###HEADER` - extract headers as links, ex. `$header:##Ideas` or `$header:"## Plugins for Obsidian"`
-- `$blocks` - extract all blocks paths from the note as links
+
+| Regexp                   | Description                                                                                                            | Usage example                                              |
+|--------------------------|------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------|
+| `$filename`              | a basename of a file                                                                                                   | `$filename`                                                |
+| `$link`                  | wikilink                                                                                                               | `$link`                                                    |
+| `$searchresult`          | the context displayed in the Obsidian search, depending on the amount of context that is selected in the search window | `$searchresult`                                            |
+| `$matchline`             | the line which contains the search query                                                                               | `$matchline`                                               |
+| `$matchline:NUMBER`      | the line which contains the search query and NUMBER lines after and before matched line                                | `$matchline:10`                                            |
+| `$matchline:+NUMBER`     | the line which contains the search query and NUMBER lines after matched line                                           | `$matchline:+10`                                           |
+| `$matchline:COUNT:LIMIT` | the line which contains the search query and NUMBER lines around and limit line by LIMIT characters                    | `$matchline:0:10`                                          |
+| `$lines`                 | the full content of the file                                                                                           | `$lines`                                                   |
+| `$lines:NUMBER`          | NUMBER lines from the file                                                                                             | `$lines:10`                                                |
+| `$ext`                   | extension of the file                                                                                                  |                                                            |
+| `$created`               |                                                                                                                        |                                                            |
+| `$size`                  |                                                                                                                        |                                                            |
+| `$parent`                | parent folder                                                                                                          |                                                            |
+| `$path`                  | path to file                                                                                                           |                                                            |
+| `$frontmatter:NAME`      | frontmatter value from field `NAME`                                                                                    |                                                            |
+| `$header:##`             | all headers as links                                                                                                   |                                                            |
+| `$header:###HEADER`      | headers as links                                                                                                       | `$header:##Ideas`<br/> `$header:"## Plugins for Obsidian"` |
+| `$blocks`                | all blocks paths from the note as links                                                                                |                                                            |
 
 ## Settings
 - Delay (default: `100ms`) - the plugin don't wait until search completed. It waits for a delay and paste result after that.
@@ -92,4 +111,3 @@ Syntax looks like that:
 - Extract files and place them to your vault's plugins folder: `<vault>/.obsidian/plugins/`
 - Reload Obsidian
 - If prompted about Safe Mode, you can disable safe mode and enable the plugin. Otherwise, head to Settings, third-party plugins, make sure safe mode is off and enable the plugin from there.
-
