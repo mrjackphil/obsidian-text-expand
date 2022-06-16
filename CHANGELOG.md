@@ -1,11 +1,11 @@
 # Changelog
 
-## [0.12.0](https://github.com/mrjackphil/obsidian-text-expand/compare/v0.11.0...v0.12.0) (2022-06-16)
+## [0.11.1](https://github.com/mrjackphil/obsidian-text-expand/compare/v0.11.0...v0.12.0) (2022-06-16)
 
 
-### Features
+### Bug Fixes
 
-* :sparkles: ability to put multiline default template ([4b4f362](https://github.com/mrjackphil/obsidian-text-expand/commit/4b4f362bc39ee8997db4cdffdd1cadd67e9f612a)), closes [#68](https://github.com/mrjackphil/obsidian-text-expand/issues/68)
+* :bug: ability to put multiline default template ([4b4f362](https://github.com/mrjackphil/obsidian-text-expand/commit/4b4f362bc39ee8997db4cdffdd1cadd67e9f612a)), closes [#68](https://github.com/mrjackphil/obsidian-text-expand/issues/68)
 
 ## [0.11.0](https://github.com/mrjackphil/obsidian-text-expand/compare/0.10.8...v0.11.0) (2022-06-16)
 
