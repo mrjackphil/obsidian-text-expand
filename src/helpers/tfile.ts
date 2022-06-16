@@ -1,5 +1,6 @@
 import {Plugin, TFile} from "obsidian";
 import {pick} from "./helpers";
+import {FileParameters} from "../main";
 
 export function getFrontMatter(file: TFile, plugin: Plugin, s: string) {
     const {frontmatter = null} = plugin.app.metadataCache.getCache(file.path)
@@ -11,7 +12,7 @@ export function getFrontMatter(file: TFile, plugin: Plugin, s: string) {
     return ''
 }
 
-export async function getFileInfo(this: void, plugin: Plugin, file: TFile) {
+export async function getFileInfo(this: void, plugin: Plugin, file: TFile): Promise<FileParameters> {
     const info = Object.assign({}, file, {
             content: file.extension === 'md' ? await plugin.app.vault.cachedRead(file) : '',
             link: plugin.app.fileManager.generateMarkdownLink(file, file.name).replace(/^!/, '')

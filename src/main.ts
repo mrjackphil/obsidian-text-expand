@@ -41,6 +41,21 @@ interface SearchLeaf extends WorkspaceLeaf {
     }
 }
 
+export interface FileParameters {
+    basename: string
+    content: string
+    extension: string
+    headings: Array<any>
+    link: string
+    name: string
+    path: string
+    sections: Array<any>
+    stat: {}
+    frontmatter: { [k: string]: any }
+    links: Array<any>
+    listItems: Array<any>
+}
+
 type NumberTuple = [number, number]
 
 export interface SearchDetails {
