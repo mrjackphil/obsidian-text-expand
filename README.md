@@ -3,15 +3,15 @@
 ![](./screenshots/1.gif)
 
 This plugin will search files using [Obsidian search functionality](https://publish.obsidian.md/help/Plugins/Search)
-and then paste the result. The output can be customized using [template feature](#templating).
+and then paste the result. The output can be customized using [template feature](#template-engines).
 
 ## Table of Contents
 
 - [Basic usage](#how-to-use)
 - [Search functionality]()
-- [Templating](#templating)
-    - [eta templating](#eta-templating)
-    - [Sequence templating (LEGACY)](#sequence-templating-legacy)
+- [Template engines](#template-engines)
+    - [eta](#eta-template-engine)
+    - [sequences](#sequence-template-engine-legacy)
         - [Available sequences](#special-sequences)
 
 ## How to use
@@ -28,15 +28,50 @@ and then paste the result. The output can be customized using [template feature]
 ## Search functionality
 
 First line in expander code block is always a search request.
-You can leave it empty to use results from 
+You can leave it empty to use results from search panel as is.
+
+Once searching, plugin waits some time (configurable) and extract results from
+search panel to template engine.
  
-## Templating
+## Template engines
 
-### eta templating
+### eta template engine
 
-You can use 
+You can use [eta](https://eta.js.org) template engine for managing results.
 
-### Sequence templating (LEGACY)
+```
+## <%= it.current.frontmatter.title %>
+
+<% it.files.forEach(file => { %>
+   - <%= file.link %> 
+<% }) %>
+```
+
+Use `it` object to access search results and fields for current file.
+
+| Path         | Type                  | Description                      |
+|--------------|-----------------------|----------------------------------|
+| `it.current` | FileParameters        | Info about current file          |
+| `it.files`   | Array<FileParameters> | Info about files in search panel |
+
+`FileParameters` type has those fields.
+
+| Name        | Type   | Description                                      | Example                                                      |
+|-------------|--------|--------------------------------------------------|--------------------------------------------------------------|
+| basename    | string | Name of the file                                 | `Obsidian`                                                   |
+| name        | string | Full name of the file with extension             | `Obsidian.md`                                                |
+| content     | string | Content of the file                              | `Obsidian\nContent of the file.`                             |
+| extension   | string | Extension of the file                            | `.md`                                                        |
+| link        | string | Wiki or MD link (depends on Obsidian's settings) | `[[Obsidian]]`                                               |
+| path        | string | Relative to vault root path to the file          | `resources/Obsidian.md`                                      |
+| frontmatter | Object | Returns all values from frontmatter              | `{ title: "Obsidian", author: MrJackphil }`                  |
+| stat        | Object | File stats returned by Obsidian                  | `{ ctime: 1654089929073, mtime: 1654871855121, size: 1712 }` |
+| links       | Array  | Array with links in the file                     |                                                              |
+| headings    | Array  | Array with headings in the file                  |                                                              |
+| sections    | Array  | Array with section of the file                   |                                                              |
+| listItems   | Array  | Array with list items of the file                |                                                              |
+
+### sequence template engine (LEGACY)
 Using template feature you can customize an output. 
 - Put template below the SEARCH_QUERY line
 - Put a cursor inside code block with a template
