@@ -489,7 +489,7 @@ class SettingTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName('Default template')
             .setDesc('You can specify default template')
-            .addText(text => {
+            .addTextArea(text => {
                 text.setValue(this.plugin.config.defaultTemplate)
                     .onChange(val => {
                         this.plugin.config.defaultTemplate = val
