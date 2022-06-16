@@ -99,6 +99,25 @@ export default class TextExpander extends Plugin {
         this.init = this.init.bind(this)
     }
 
+    async autoExpand() {
+        if (!this.config.autoExpand) {
+            return
+        }
+
+        const activeLeaf = this.app.workspace.activeLeaf
+        if (!activeLeaf) {
+            return
+        }
+
+        const activeView = activeLeaf.view
+        const isAllowedView = activeView instanceof MarkdownView
+        if (!isAllowedView) {
+            return
+        }
+
+        await this.init(true)
+    }
+
     async onload() {
         this.addSettingTab(new SettingTab(this.app, this));
 
@@ -107,41 +126,23 @@ export default class TextExpander extends Plugin {
                 .createDiv()
                 .createEl('button', {text: 'Run expand query',})
                 .addEventListener('click', this.init.bind(this, false, ctx.getSectionInfo(el).lineStart))
-        })
+        });
 
         this.addCommand({
             id: 'editor-expand',
             name: 'expand',
             callback: this.init,
             hotkeys: []
-        })
+        });
 
         this.addCommand({
             id: 'editor-expand-all',
             name: 'expand all',
             callback: () => this.init(true),
             hotkeys: []
-        })
+        });
 
-        this.app.workspace.on('file-open', async () => {
-            if (!this.config.autoExpand) {
-                return
-            }
-
-            const activeLeaf = this.app.workspace.activeLeaf
-            if (!activeLeaf) {
-                return
-            }
-
-            const activeView = activeLeaf.view
-            const isAllowedView = activeView instanceof MarkdownView
-            if (!isAllowedView) {
-                return
-            }
-
-            await this.init(true)
-
-        })
+        this.app.workspace.on('file-open', this.autoExpand);
 
         const data = await this.loadData() as PluginSettings
         if (data) {
@@ -154,6 +155,7 @@ export default class TextExpander extends Plugin {
 
     onunload() {
         console.log('unloading plugin');
+        this.app.workspace.off('file-open', this.autoExpand);
     }
 
     async saveSettings() {
