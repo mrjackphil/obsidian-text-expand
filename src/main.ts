@@ -12,7 +12,7 @@ import {
     PluginManifest,
     PluginSettingTab,
     Setting,
-    TFile
+    TFile, View, WorkspaceLeaf
 } from 'obsidian';
 import sequences, {Sequences} from "./sequences/sequences";
 import {splitByLines} from "./helpers/string";
@@ -29,6 +29,15 @@ interface PluginSettings {
     prefixes: {
         header: string
         footer: string
+    }
+}
+
+interface SearchLeaf extends WorkspaceLeaf {
+    view: View & {
+        searchComponent: {
+            getValue: () => string
+            setValue: (s: string) => void
+        }
     }
 }
 
@@ -72,6 +81,16 @@ export default class TextExpander extends Plugin {
     }
 
     seqs: Sequences[] = sequences
+
+    leftPanelInfo: {
+        collapsed: boolean
+        tab: number
+        text: string
+    } = {
+        collapsed: false,
+        tab: 0,
+        text: ''
+    }
 
     constructor(app: App, plugin: PluginManifest) {
         super(app, plugin);
@@ -288,43 +307,69 @@ export default class TextExpander extends Plugin {
         return {heading, footer, repeatableContent};
     }
 
+    private restoreLeftPanelState() {
+        const {collapsed, tab, text} = this.leftPanelInfo;
+        const splitChildren = this.getLeftSplitElement()
+
+        this.getSearchView().searchComponent.setValue(text)
+
+        if (tab !== splitChildren.currentTab) {
+            splitChildren.selectTabIndex(tab)
+        }
+
+        if (collapsed) {
+            this.app.workspace.leftSplit.collapse()
+        }
+    }
+
     private search(s: string) {
         // @ts-ignore
         const globalSearchFn = this.app.internalPlugins.getPluginById('global-search').instance.openGlobalSearch.bind(this)
         const search = (query: string) => globalSearchFn(query)
 
-        const leftSplitState = {
+        this.leftPanelInfo = {
             collapsed: this.app.workspace.leftSplit.collapsed,
-            tab: this.getSearchTabIndex()
+            tab: this.getSearchTabIndex(),
+            text: this.getSearchValue(),
         }
 
         search(s)
-        if (leftSplitState.collapsed) {
-            this.app.workspace.leftSplit.collapse()
-        }
-
-        const splitChildren = this.getLeftSplitElement()
-        if (leftSplitState.tab !== splitChildren.currentTab) {
-            splitChildren.selectTabIndex(leftSplitState.tab)
-        }
     }
 
     private getLeftSplitElement(): {
         currentTab: number
         selectTabIndex: (n: number) => void
-        children: {
-            findIndex: (c: (item: any, i: number, ar: any[]) => void) => number
-        }
+        children: Array<WorkspaceLeaf | SearchLeaf>
     } {
         // @ts-ignore
         return this.app.workspace.leftSplit.children[0];
+    }
+
+    private getSearchView(): SearchLeaf['view'] {
+        const view = this.getLeftSplitElement().children.filter(e => e.getViewState().type === 'search')[0].view
+
+        if ('searchComponent' in view) {
+            return view;
+        }
+
+        return undefined;
+    }
+
+    private getSearchValue(): string {
+        const view = this.getSearchView();
+
+        if (view) {
+            return view.searchComponent.getValue()
+        }
+
+        return ''
     }
 
     private getSearchTabIndex(): number {
         const leftTabs = this.getLeftSplitElement().children;
         let searchTabId: string;
 
-        this.app.workspace.iterateAllLeaves((leaf: any) => {
+        this.app.workspace.iterateAllLeaves((leaf: WorkspaceLeaf & { id: string }) => {
             if (leaf.getViewState().type == "search") {
                 searchTabId = leaf.id;
             }
@@ -342,7 +387,8 @@ export default class TextExpander extends Plugin {
         return new Promise(resolve => {
             setTimeout(() => {
                 // @ts-ignore
-                const results = view.dom.resultDomLookup as Map<TFile, SearchDetails>
+                const results = view.dom.resultDomLookup as Map<TFile, SearchDetails>;
+                this.restoreLeftPanelState();
 
                 return resolve(results)
             }, this.config.delay)
