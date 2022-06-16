@@ -6,7 +6,6 @@
 ### Features
 
 * :sparkles: add current file info to template ([0974ad6](https://github.com/mrjackphil/obsidian-text-expand/commit/0974ad667c3d38d900745a2cfe3e6679fb594095))
-* :sparkles: add doT ([62fed1b](https://github.com/mrjackphil/obsidian-text-expand/commit/62fed1b70c1fb5f0658c3cf44e6ee32c0b8c2d17))
 * :sparkles: add expand on button ([03dfca2](https://github.com/mrjackphil/obsidian-text-expand/commit/03dfca2ddbe5f8f541520f2b8b6a9866ec3d889a))
 * :sparkles: change cmdoc getter ([0f693d0](https://github.com/mrjackphil/obsidian-text-expand/commit/0f693d0d7149cb70fc76d4017220a6267dbcdef9))
 * :sparkles: concrete fields to include to doT ([c75f110](https://github.com/mrjackphil/obsidian-text-expand/commit/c75f1105c8b8a4f883db4fe520bbda68e13ee984))
