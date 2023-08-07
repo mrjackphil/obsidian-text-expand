@@ -225,6 +225,8 @@ export default class TextExpander extends Plugin {
 
         const newContent = splitByLines(this.cm.getValue());
 
+        this.saveLeftPanelState();
+
         if (query.query !== '') {
             this.search(query.query)
         }
@@ -241,8 +243,6 @@ export default class TextExpander extends Plugin {
         if (currentView instanceof FileView) {
             currentFileName = currentView.file.basename
         }
-
-        this.saveLeftPanelState();
 
         const searchResults = await this.getFoundAfterDelay(query.query === '');
         const files = extractFilesFromSearchResults(searchResults, currentFileName, this.config.excludeCurrent);
@@ -326,7 +326,8 @@ export default class TextExpander extends Plugin {
     private saveLeftPanelState(): void {
         this.leftPanelInfo = {
             collapsed: this.app.workspace.leftSplit.collapsed,
-            tab: this.getSearchTabIndex(),
+            // @ts-ignore
+            tab: this.app.workspace.leftSplit.children[0].currentTab,
             text: this.getSearchValue(),
         }
     }
@@ -402,22 +403,6 @@ export default class TextExpander extends Plugin {
 
         return ''
     }
-
-    private getSearchTabIndex(): number {
-        const leftTabs = this.getLeftSplitElement().children;
-        let searchTabId: string;
-
-        this.app.workspace.iterateAllLeaves((leaf: WorkspaceLeaf & { id: string }) => {
-            if (leaf.getViewState().type == "search") {
-                searchTabId = leaf.id;
-            }
-        });
-        return leftTabs.findIndex((item: any, _index: number, _array: any[]) => {
-            if (item.id == searchTabId) {
-                return true;
-            }
-        });
-    };
 
     private async getFoundAfterDelay(immediate: boolean): Promise<Map<TFile, SearchDetails>> {
         const searchLeaf = this.app.workspace.getLeavesOfType('search')[0]
