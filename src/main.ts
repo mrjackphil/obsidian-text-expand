@@ -363,13 +363,33 @@ export default class TextExpander extends Plugin {
         return this.app.workspace.leftSplit.children[0];
     }
 
-    private getSearchView(): SearchLeaf['view'] {
-        const view = this.getLeftSplitElement().children.filter(e => e.getViewState().type === 'search')[0].view
+    private getLeftSplitElementOfViewStateType(viewStateType): {
+        currentTab: number
+        selectTabIndex: (n: number) => void
+        children: Array<WorkspaceLeaf | SearchLeaf>
+    } {
+        // @ts-ignore
+        for (const child of this.app.workspace.leftSplit.children) {
+            const filterForSearchResult = child.children.filter(e => e.getViewState().type === viewStateType);
+            if (filterForSearchResult === undefined || filterForSearchResult.length < 1) {
+                continue;
+            }
 
+            return filterForSearchResult[0];
+        }
+        return undefined;
+    }
+
+    private  getSearchView(): SearchLeaf['view'] {
+        const searchElement = this.getLeftSplitElementOfViewStateType('search');
+        if (undefined == searchElement) {
+            return undefined;
+        }
+
+        const view = searchElement.view;
         if ('searchComponent' in view) {
             return view;
         }
-
         return undefined;
     }
 
