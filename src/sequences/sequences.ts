@@ -273,7 +273,7 @@ const sequences: Sequences[] = [
         desc: '',
         format: (_p, s: string, content: string, file: TFile, results) => {
             const prefix = s.slice(0, s.indexOf('$searchresult'));
-            return results.children.map(matchedFile => {
+            return results.vChildren.children.map(matchedFile => {
                 return prefix + matchedFile.el.innerText
             }).join('\n')
         }
